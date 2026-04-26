@@ -4,7 +4,9 @@ import { Room } from 'src/rooms/entities/room.entity';
 
 @Table({
   tableName: 'users',
-  timestamps: false,
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: false,
 })
 export class User extends Model {
   @Column

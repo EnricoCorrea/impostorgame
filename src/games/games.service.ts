@@ -1,26 +1,63 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateGameDto } from './dto/create-game.dto';
 import { UpdateGameDto } from './dto/update-game.dto';
+import { InjectModel } from '@nestjs/sequelize';
+import { Game } from './entities/game.entity';
+import { Room } from '../rooms/entities/room.entity';
 
 @Injectable()
 export class GamesService {
-  create(createGameDto: CreateGameDto) {
-    return 'This action adds a new game';
+  constructor(
+    @InjectModel(Game)
+    private gameModel: typeof Game,
+  ) {}
+
+  async create(data: any) {
+    return await this.gameModel.create({
+      ...data,
+      status: 'WAITING',
+    });
   }
 
-  findAll() {
-    return `This action returns all games`;
+  async findAll() {
+    return await this.gameModel.findAll({
+      include: [Room],
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} game`;
+  async findOne(id: number) {
+    const game = await this.gameModel.findByPk(id, {
+      include: [Room],
+    });
+
+    if (!game) {
+      throw new NotFoundException('Game not found');
+    }
+
+    return game;
   }
 
-  update(id: number, updateGameDto: UpdateGameDto) {
-    return `This action updates a #${id} game`;
+  async update(id: number, data: any) {
+    const game = await this.gameModel.findByPk(id);
+
+      if (!game) {
+        throw new NotFoundException('Game not found');
+      }
+
+      await game.update(data);
+
+      return game;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} game`;
+  async remove(id: number) {
+    const game = await this.gameModel.findByPk(id);
+
+    if (!game) {
+    throw new NotFoundException('Game not found');
+    }
+
+    await game.destroy();
+
+    return game;
   }
 }

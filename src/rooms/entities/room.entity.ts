@@ -4,10 +4,12 @@ import {
   Model,
   ForeignKey,
   BelongsTo,
+  HasMany,
   DataType,
 } from 'sequelize-typescript';
 
 import { User } from 'src/users/entities/user.entity';
+import { Game } from 'src/games/entities/game.entity';
 
 @Table({
   tableName: 'rooms',
@@ -36,4 +38,7 @@ export class Room extends Model {
 
   @Column({ field: 'closed_at' })
   closedAt: Date;
+  
+  @HasMany(() => Game)
+  games: Game[];
 }
