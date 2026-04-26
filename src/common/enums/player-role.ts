@@ -1,4 +1,4 @@
-export enum GameStatus {
+export enum PlayerRole {
   IMPOSTOR = 'IMPOSTOR',
   INNOCENT = 'INNOCENT',
 }
