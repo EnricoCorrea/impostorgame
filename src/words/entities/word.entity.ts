@@ -2,11 +2,12 @@ import {
     Table,
     Column,
     Model,
-    ForeignKey,
     BelongsToMany,
-    BelongsTo,
+    HasMany,
 } from 'sequelize-typescript'
+
 import { Game } from 'src/games/entities/game.entity'
+import { Player } from 'src/players/entities/player.entity'
 import { GameWord } from 'src/words/entities/game-word.entity'
 
 @Table({
@@ -23,4 +24,7 @@ export class Word extends Model {
 
     @BelongsToMany(() => Game, () => GameWord)
     games: Game[];
+
+    @HasMany(() => Player)
+    players: Player;
 }

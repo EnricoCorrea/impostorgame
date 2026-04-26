@@ -6,9 +6,11 @@ import {
     BelongsTo,
     BelongsToMany,
     DataType,
+    HasMany,
 } from 'sequelize-typescript'
 import { Room } from 'src/rooms/entities/room.entity'
 import { Word } from 'src/words/entities/word.entity'
+import { Player } from 'src/players/entities/player.entity'
 import { GameWord } from 'src/words/entities/game-word.entity'
 
 @Table({
@@ -47,4 +49,7 @@ export class Game extends Model {
 
     @BelongsToMany(() => Word, () => GameWord)
     words: Word[];
+
+    @HasMany(() => Player)
+    players: Player;
 }

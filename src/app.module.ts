@@ -28,7 +28,7 @@ import { WordsModule } from './words/words.module';
     MessagesModule,
     VotesModule,
     PlayersModule,
-    WordsModule,],
+    WordsModule],
   controllers: [AppController],
   providers: [AppService],
 })

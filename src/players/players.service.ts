@@ -1,26 +1,55 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePlayerDto } from './dto/create-player.dto';
 import { UpdatePlayerDto } from './dto/update-player.dto';
+import { InjectModel } from '@nestjs/sequelize';
+import { Player } from './entities/player.entity';
 
 @Injectable()
 export class PlayersService {
-  create(createPlayerDto: CreatePlayerDto) {
-    return 'This action adds a new player';
+constructor(
+  @InjectModel(Player)
+  private playerModel: typeof Player,
+) {}
+
+async create(createPlayerDto: CreatePlayerDto) {
+  return this.playerModel.create({ ...createPlayerDto });
+}
+
+async findAll() {
+  return this.playerModel.findAll();
+}
+
+async findOne(id: number) {
+  const player = await this.playerModel.findByPk(id);
+
+  if (!player) {
+    throw new NotFoundException('Player not found');
   }
 
-  findAll() {
-    return `This action returns all players`;
+  return player;
+}
+
+async update(id: number, updatePlayerDto: UpdatePlayerDto) {
+  const player = await this.playerModel.findByPk(id);
+
+  if (!player) {
+    throw new NotFoundException('Player not found');
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} player`;
+  await player.update({ ...updatePlayerDto });
+
+  return player;
+}
+
+async remove(id: number) {
+  const player = await this.playerModel.findByPk(id);
+
+  if (!player) {
+    throw new NotFoundException('Player not found');
   }
 
-  update(id: number, updatePlayerDto: UpdatePlayerDto) {
-    return `This action updates a #${id} player`;
-  }
+  await player.destroy();
 
-  remove(id: number) {
-    return `This action removes a #${id} player`;
-  }
+  return player;
+}
 }
