@@ -10,11 +10,11 @@ import { SequelizeModule } from '@nestjs/sequelize';
   imports: [RoomsModule, UsersModule, GamesModule,
     SequelizeModule.forRoot({
       dialect: 'postgres',
-      host: 'localhost',
+      host: '26.154.169.75',
       port: 5432,
       username: 'amigo',
       password: 'Cefet123!',
-      database: 'impostorgame',
+      database: 'impostor_game',
 
       autoLoadModels: true,
       synchronize: false,
