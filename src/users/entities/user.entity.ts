@@ -1,4 +1,6 @@
 import { Column, Model, Table } from 'sequelize-typescript';
+import { HasMany } from 'sequelize-typescript';
+import { Room } from 'src/rooms/entities/room.entity';
 
 @Table({
   tableName: 'users',
@@ -13,4 +15,7 @@ export class User extends Model {
 
   @Column
   password: string;
+
+  @HasMany(() => Room)
+  rooms: Room[];
 }

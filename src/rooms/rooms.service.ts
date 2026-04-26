@@ -4,6 +4,8 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 import { InjectModel } from '@nestjs/sequelize';
 import { Room } from './entities/room.entity';
 import { NotFoundException } from '@nestjs/common';
+import { User } from '../users/entities/user.entity';
+
 
 @Injectable()
 export class RoomsService {
@@ -15,19 +17,19 @@ export class RoomsService {
   async create(data: any) {
     return this.roomModel.create({
       ...data,
-      status: 'WAITING',
+      //status: 'WAITING',
     });
   }
 
   async findAll() {
     return this.roomModel.findAll({
-      include: ['host'],
+      include: [User],
     });
   }
 
   async findOne(id: number) {
     const room = await this.roomModel.findByPk(id, {
-      include: ['host'],
+      include: [User],
     });
 
     if (!room) {
