@@ -8,6 +8,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { MessagesModule } from './messages/messages.module';
 import { VotesModule } from './votes/votes.module';
 import { PlayersModule } from './players/players.module';
+import { WordsModule } from './words/words.module';
 
 @Module({
   imports: [RoomsModule, UsersModule, GamesModule,
@@ -26,7 +27,8 @@ import { PlayersModule } from './players/players.module';
     }),
     MessagesModule,
     VotesModule,
-    PlayersModule,],
+    PlayersModule,
+    WordsModule,],
   controllers: [AppController],
   providers: [AppService],
 })

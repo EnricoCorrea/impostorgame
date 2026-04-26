@@ -4,9 +4,12 @@ import {
     Model,
     ForeignKey,
     BelongsTo,
+    BelongsToMany,
     DataType,
 } from 'sequelize-typescript'
 import { Room } from 'src/rooms/entities/room.entity'
+import { Word } from 'src/words/entities/word.entity'
+import { GameWord } from 'src/words/entities/game-word.entity'
 
 @Table({
     tableName: 'games',
@@ -41,4 +44,7 @@ export class Game extends Model {
 
     @Column({ field: 'finished_at' })
     finishedAt: Date;
+
+    @BelongsToMany(() => Word, () => GameWord)
+    words: Word[];
 }
