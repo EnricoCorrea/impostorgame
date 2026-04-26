@@ -18,28 +18,28 @@ CREATE TYPE player_role AS ENUM (
 
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
-  name VARCHAR(100),
-  email VARCHAR(150) UNIQUE,
-  password VARCHAR(255),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  name VARCHAR(100) UNIQUE NOT NULL,
+  email VARCHAR(150) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE TABLE rooms (
   id SERIAL PRIMARY KEY,
-  name VARCHAR(100),
-  host_id INT,
-  status room_status,
-  max_users INT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  name VARCHAR(100) NOT NULL,
+  host_id INT NOT NULL,
+  status room_status DEFAULT 'WAITING' NOT NULL,
+  max_users INT DEFAULT 3 NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
   closed_at TIMESTAMP,
 
-  FOREIGN KEY (host_id) REFERENCES users(id) ON DELETE SET NULL
+  FOREIGN KEY (host_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE room_players (
   room_id INT,
   player_id INT,
-  joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
 
   PRIMARY KEY (room_id, player_id),
 
@@ -49,41 +49,39 @@ CREATE TABLE room_players (
 
 CREATE TABLE games (
   id SERIAL PRIMARY KEY,
-  room_id INT,
+  room_id INT NOT NULL,
   winner player_role,
-  status game_status,
-  round_number INT,
-  started_at TIMESTAMP,
+  status game_status DEFAULT 'WAITING' NOT NULL,
+  round_number INT DEFAULT 1 NOT NULL,
+  started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
   finished_at TIMESTAMP,
 
-  FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
-
-  CHECK (
-    finished_at IS NULL OR finished_at >= started_at
-  )
+  FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
 );
 
 CREATE TABLE words (
   id SERIAL PRIMARY KEY,
-  word VARCHAR(50),
-  impostor_clue TEXT
+  word VARCHAR(50) UNIQUE NOT NULL,
+  impostor_clue TEXT NOT NULL
 );
 
 CREATE TABLE game_words (
   game_id INT PRIMARY KEY,
-  game_word_id INT,
+  word_id INT NOT NULL,
 
   FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
-  FOREIGN KEY (game_word_id) REFERENCES words(id)
+  FOREIGN KEY (word_id) REFERENCES words(id)
 );
 
 CREATE TABLE players (
   player_id SERIAL PRIMARY KEY,
-  game_id INT,
-  user_id INT,
-  word_id INT,
-  role player_role,
-  is_alive BOOLEAN DEFAULT TRUE,
+  game_id INT NOT NULL,
+  user_id INT NOT NULL,
+  word_id INT NOT NULL,
+  role player_role DEFAULT 'INNOCENT' NOT NULL,
+  is_alive BOOLEAN DEFAULT TRUE NOT NULL,
+
+  UNIQUE (game_id, user_id),
 
   FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -92,10 +90,10 @@ CREATE TABLE players (
 
 CREATE TABLE messages (
   id SERIAL PRIMARY KEY,
-  game_id INT,
-  player_id INT,
-  content TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  game_id INT NOT NULL,
+  player_id INT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
 
   FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
   FOREIGN KEY (player_id) REFERENCES players(player_id) ON DELETE CASCADE
@@ -103,11 +101,11 @@ CREATE TABLE messages (
 
 CREATE TABLE clues (
   id SERIAL PRIMARY KEY,
-  game_id INT,
-  player_id INT,
-  round_number INT,
-  clue TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  game_id INT NOT NULL,
+  player_id INT NOT NULL,
+  round_number INT NOT NULL,
+  clue TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
 
   FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE,
   FOREIGN KEY (player_id) REFERENCES players(player_id) ON DELETE CASCADE
@@ -117,8 +115,8 @@ CREATE TABLE votes (
   round_number INT,
   game_id INT,
   voter_id INT,
-  target_player_id INT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  target_player_id INT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
 
   PRIMARY KEY (round_number, game_id, voter_id),
 
