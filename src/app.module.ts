@@ -10,6 +10,7 @@ import { VotesModule } from './votes/votes.module';
 import { PlayersModule } from './players/players.module';
 import { WordsModule } from './words/words.module';
 import { CluesModule } from './clues/clues.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [RoomsModule, UsersModule, GamesModule,
@@ -30,7 +31,8 @@ import { CluesModule } from './clues/clues.module';
     VotesModule,
     PlayersModule,
     WordsModule,
-    CluesModule],
+    CluesModule,
+    AuthModule],
   controllers: [AppController],
   providers: [AppService],
 })
