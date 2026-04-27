@@ -19,6 +19,11 @@ export class User extends Model {
 
   @Column
   declare password: string;
+  
+  @Column({
+    defaultValue: 'PLAYER'
+  })
+  declare role: string;
 
   @HasMany(() => Room)
   rooms: Room[];
