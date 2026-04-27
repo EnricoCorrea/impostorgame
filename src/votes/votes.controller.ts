@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Delete, Query } from '@nestjs/common';
 import { VotesService } from './votes.service';
 import { CreateVoteDto } from './dto/create-vote.dto';
 import { UpdateVoteDto } from './dto/update-vote.dto';
@@ -13,22 +13,39 @@ export class VotesController {
   }
 
   @Get()
-  findAll() {
-    return this.votesService.findAll();
+  findOne(
+    @Query('roundNumber') roundNumber: string,
+    @Query('gameId') gameId: string,
+    @Query('voterId') voterId: string,
+  ) {
+    return this.votesService.findOne(+roundNumber, +gameId, +voterId);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.votesService.findOne(+id);
+  @Patch()
+  update(
+    @Query('roundNumber') roundNumber: string,
+    @Query('gameId') gameId: string,
+    @Query('voterId') voterId: string,
+    @Body() updateVoteDto: UpdateVoteDto,
+  ) {
+    return this.votesService.update(
+      +roundNumber,
+      +gameId,
+      +voterId,
+      updateVoteDto,
+    );
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateVoteDto: UpdateVoteDto) {
-    return this.votesService.update(+id, updateVoteDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.votesService.remove(+id);
+  @Delete()
+  remove(
+    @Query('roundNumber') roundNumber: string,
+    @Query('gameId') gameId: string,
+    @Query('voterId') voterId: string,
+  ) {
+    return this.votesService.remove(
+      +roundNumber,
+      +gameId,
+      +voterId,
+    );
   }
 }

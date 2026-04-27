@@ -1,26 +1,95 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/sequelize';
+import { Vote } from './entities/vote.entity';
 import { CreateVoteDto } from './dto/create-vote.dto';
 import { UpdateVoteDto } from './dto/update-vote.dto';
+import { Game } from 'src/games/entities/game.entity';
+import { Player } from 'src/players/entities/player.entity';
 
 @Injectable()
 export class VotesService {
-  create(createVoteDto: CreateVoteDto) {
-    return 'This action adds a new vote';
+  constructor(
+    @InjectModel(Vote)
+    private voteModel: typeof Vote,
+  ) {}
+
+  async create(createVoteDto: CreateVoteDto) {
+    return this.voteModel.create(createVoteDto as any);
   }
 
-  findAll() {
-    return `This action returns all votes`;
+  async findAll() {
+  return this.voteModel.findAll({
+    include: [
+      {
+        model: Game,
+      },
+      {
+        model: Player,
+        as: 'voter',
+      },
+      {
+        model: Player,
+        as: 'target',
+      },
+    ],
+  });
+}
+
+  async findOne(
+    roundNumber: number,
+    gameId: number,
+    voterId: number,
+  ) {
+    const vote = await this.voteModel.findOne({
+      where: {
+        roundNumber,
+        gameId,
+        voterId,
+      },
+      include: [
+        {
+          model: Game,
+        },
+        {
+          model: Player,
+          as: 'voter',
+        },
+        {
+          model: Player,
+          as: 'target',
+        },
+      ]
+    });
+    if (!vote) {
+      throw new NotFoundException('Vote not found');
+    }
+    return vote;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} vote`;
+  async update(
+    roundNumber: number,
+    gameId: number,
+    voterId: number,
+    updateVoteDto: UpdateVoteDto,
+  ) {
+    const vote = await this.findOne(roundNumber, gameId, voterId);
+
+    await vote.update(updateVoteDto);
+
+    return vote;
   }
 
-  update(id: number, updateVoteDto: UpdateVoteDto) {
-    return `This action updates a #${id} vote`;
-  }
+  async remove(
+    roundNumber: number,
+    gameId: number,
+    voterId: number,
+  ) {
+    const vote = await this.findOne(roundNumber, gameId, voterId);
 
-  remove(id: number) {
-    return `This action removes a #${id} vote`;
+    await vote.destroy();
+
+    return {
+      message: 'Vote removed successfully',
+    };
   }
 }
