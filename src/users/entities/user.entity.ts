@@ -12,17 +12,17 @@ import { Player } from 'src/players/entities/player.entity'
 })
 export class User extends Model {
   @Column
-  name: string;
+  declare name: string;
 
   @Column
-  email: string;
+  declare email: string;
 
   @Column
-  password: string;
+  declare password: string;
 
   @HasMany(() => Room)
   rooms: Room[];
 
   @HasMany(() => Player)
-  players: Player;
+  players: Player[];
 }
