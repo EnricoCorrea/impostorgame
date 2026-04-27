@@ -9,6 +9,7 @@ import { MessagesModule } from './messages/messages.module';
 import { VotesModule } from './votes/votes.module';
 import { PlayersModule } from './players/players.module';
 import { WordsModule } from './words/words.module';
+import { CluesModule } from './clues/clues.module';
 
 @Module({
   imports: [RoomsModule, UsersModule, GamesModule,
@@ -28,7 +29,8 @@ import { WordsModule } from './words/words.module';
     MessagesModule,
     VotesModule,
     PlayersModule,
-    WordsModule],
+    WordsModule,
+    CluesModule],
   controllers: [AppController],
   providers: [AppService],
 })
