@@ -41,7 +41,4 @@ export class Room extends Model {
   
   @HasMany(() => Game)
   games: Game[];
-
-  @HasMany(() => User)
-  users: User[];
 }

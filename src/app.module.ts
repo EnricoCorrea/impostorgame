@@ -11,8 +11,6 @@ import { PlayersModule } from './players/players.module';
 import { WordsModule } from './words/words.module';
 import { CluesModule } from './clues/clues.module';
 import { AuthModule } from './auth/auth.module';
-import { GameService } from './game/game.service';
-import { GameController } from './game/game.controller';
 
 @Module({
   imports: [RoomsModule, UsersModule, GamesModule,
@@ -35,7 +33,7 @@ import { GameController } from './game/game.controller';
     WordsModule,
     CluesModule,
     AuthModule],
-  controllers: [AppController, GameController],
-  providers: [AppService, GameService],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
