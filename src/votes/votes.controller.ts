@@ -1,7 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Delete, Query, UseGuards } from '@nestjs/common';
 import { VotesService } from './votes.service';
 import { CreateVoteDto } from './dto/create-vote.dto';
 import { UpdateVoteDto } from './dto/update-vote.dto';
+import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
+import { Roles } from 'src/auth/decorator/roles.decorator';
+import { RolesGuard } from 'src/auth/jwt/roles.guard';
 
 @Controller('votes')
 export class VotesController {
@@ -12,6 +15,8 @@ export class VotesController {
     return this.votesService.create(createVoteDto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Get()
   findOne(
     @Query('roundNumber') roundNumber: string,
@@ -21,6 +26,8 @@ export class VotesController {
     return this.votesService.findOne(+roundNumber, +gameId, +voterId);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Patch()
   update(
     @Query('roundNumber') roundNumber: string,
@@ -36,6 +43,8 @@ export class VotesController {
     );
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
   @Delete()
   remove(
     @Query('roundNumber') roundNumber: string,
