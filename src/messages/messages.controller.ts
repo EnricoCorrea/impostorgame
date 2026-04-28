@@ -24,6 +24,8 @@ import { UpdateMessageDto } from './dto/update-message.dto';
 import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { MessagesService } from './messages.service';
+import { Query } from '@nestjs/common';
+import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 
 @ApiTags('Messages')
 @ApiBearerAuth()
@@ -44,8 +46,8 @@ export class MessagesController {
   @ApiOperation({ summary: 'Listar todas as mensagens' })
   @ApiOkResponse({ description: 'Lista de mensagens retornada' })
   @UseGuards(JwtAuthGuard)
-  findAll() {
-    return this.messagesService.findAll();
+  findAll(@Query() pagination: PaginationDto) {
+    return this.messagesService.findAll(pagination);
   }
 
   @Get(':id')

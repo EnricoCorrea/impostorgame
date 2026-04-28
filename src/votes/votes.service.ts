@@ -5,6 +5,8 @@ import { CreateVoteDto } from './dto/create-vote.dto';
 import { UpdateVoteDto } from './dto/update-vote.dto';
 import { Game } from 'src/games/entities/game.entity';
 import { Player } from 'src/players/entities/player.entity';
+import { paginate } from '../common/enums/utils/paginate';
+import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 
 @Injectable()
 export class VotesService {
@@ -19,12 +21,12 @@ export class VotesService {
     return this.voteModel.create(createVoteDto as any);
   }
 
-  async findAll() {
-  return this.voteModel.findAll({
-    include: [
-      {
-        model: Game,
-      },
+  async findAll(pagination: PaginationDto) {
+    return paginate(this.voteModel, pagination, {
+      include: [
+        {
+          model: Game,
+        },
       {
         model: Player,
         as: 'voter',

@@ -5,6 +5,8 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Message } from './entities/message.entity';
 import { Game } from 'src/games/entities/game.entity';
 import { Player } from 'src/players/entities/player.entity';
+import { paginate } from '../common/enums/utils/paginate';
+import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 
 @Injectable()
 export class MessagesService {
@@ -20,8 +22,8 @@ export class MessagesService {
     });
   }
 
-  async findAll() {
-    return await this.messageModel.findAll({
+  async findAll(pagination: PaginationDto) {
+    return paginate(this.messageModel, pagination, {
       include: [Game, Player],
     });
   }

@@ -24,6 +24,8 @@ import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
 import { UpdatePlayerDto } from './dto/update-player.dto';
 import { CreatePlayerDto } from './dto/create-player.dto';
 import { PlayersService } from './players.service';
+import { Query } from '@nestjs/common';
+import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 
 @ApiTags('Players')
 @ApiBearerAuth()
@@ -44,8 +46,8 @@ export class PlayersController {
   @ApiOperation({ summary: 'Listar todos os jogadores' })
   @ApiOkResponse({ description: 'Lista de jogadores retornada' })
   @UseGuards(JwtAuthGuard)
-  findAll() {
-    return this.playersService.findAll();
+  findAll(@Query() pagination: PaginationDto) {
+    return this.playersService.findAll(pagination);
   }
 
   @Get(':id')

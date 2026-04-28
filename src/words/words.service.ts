@@ -3,6 +3,8 @@ import { CreateWordDto } from './dto/create-word.dto';
 import { UpdateWordDto } from './dto/update-word.dto';
 import { InjectModel } from '@nestjs/sequelize';
 import { Word } from './entities/word.entity';
+import { paginate } from '../common/enums/utils/paginate';
+import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 
 @Injectable()
 export class WordsService {
@@ -15,8 +17,8 @@ export class WordsService {
     return this.wordModel.create({ ...createWordDto });
   }
 
-  async findAll() {
-    return this.wordModel.findAll();
+  async findAll(pagination: PaginationDto) {
+    return paginate(this.wordModel, pagination);
   }
 
   async findOne(id: number) {

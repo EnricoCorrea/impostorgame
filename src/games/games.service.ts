@@ -10,6 +10,8 @@ import { Room } from '../rooms/entities/room.entity';
 import { Player } from 'src/players/entities/player.entity';
 import { Vote } from 'src/votes/entities/vote.entity';
 import { User } from 'src/users/entities/user.entity';
+import { paginate } from '../common/enums/utils/paginate';
+import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 
 @Injectable()
 export class GamesService {
@@ -27,8 +29,8 @@ export class GamesService {
     private roomModel: typeof Room,
   ) {}
 
-  async findAll() {
-    return await this.gameModel.findAll({
+  async findAll(pagination: PaginationDto) {
+    return paginate(this.gameModel, pagination, {
       include: [Room],
     });
   }

@@ -24,6 +24,8 @@ import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
 import { UpdateVoteDto } from './dto/update-vote.dto';
 import { CreateVoteDto } from './dto/create-vote.dto';
 import { VotesService } from './votes.service';
+import { Query } from '@nestjs/common';
+import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 
 @ApiTags('Votes')
 @ApiBearerAuth()
@@ -44,8 +46,8 @@ export class VotesController {
   @ApiOperation({ summary: 'Listar todos os votos' })
   @ApiOkResponse({ description: 'Lista de votos retornada' })
   @UseGuards(JwtAuthGuard)
-  findAll() {
-    return this.votesService.findAll();
+  findAll(@Query() pagination: PaginationDto) {
+    return this.votesService.findAll(pagination);
   }
 
   @Get(':roundNumber/:gameId/:voterId')

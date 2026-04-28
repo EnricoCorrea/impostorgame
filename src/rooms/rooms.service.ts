@@ -4,6 +4,8 @@ import { UniqueConstraintError } from 'sequelize';
 import { Room } from './entities/room.entity';
 import { RoomUser } from './entities/room-user.entity';
 import { User } from '../users/entities/user.entity';
+import { paginate } from '../common/enums/utils/paginate';
+import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 
 @Injectable()
 export class RoomsService {
@@ -51,8 +53,8 @@ export class RoomsService {
     }
   }
 
-  async findAll() {
-    return this.roomModel.findAll({
+  async findAll(pagination: PaginationDto) {
+    return paginate(this.roomModel, pagination, {
       include: [
         { model: User, as: 'host' },
         { model: User, as: 'users' },

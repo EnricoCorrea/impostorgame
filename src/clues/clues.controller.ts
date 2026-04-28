@@ -24,6 +24,8 @@ import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
 import { UpdateClueDto } from './dto/update-clue.dto';
 import { CreateClueDto } from './dto/create-clue.dto';
 import { CluesService } from './clues.service';
+import { Query } from '@nestjs/common';
+import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 
 @ApiTags('Clues')
 @ApiBearerAuth()
@@ -44,8 +46,8 @@ export class CluesController {
   @ApiOperation({ summary: 'Listar todas as dicas' })
   @ApiOkResponse({ description: 'Lista de dicas retornada' })
   @UseGuards(JwtAuthGuard)
-  findAll() {
-    return this.cluesService.findAll();
+  findAll(@Query() pagination: PaginationDto) {
+    return this.cluesService.findAll(pagination);
   }
 
   @Get(':id')

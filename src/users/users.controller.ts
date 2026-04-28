@@ -26,6 +26,8 @@ import { Roles } from 'src/auth/decorator/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
 import { RolesGuard } from 'src/auth/jwt/roles.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { Query } from '@nestjs/common';
+import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -42,12 +44,12 @@ export class UsersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar todos os usuários' })
-  @ApiOkResponse({ description: 'Lista de usuários retornada com sucesso' })
+  @ApiOperation({ summary: 'Listar usuários com paginação (ADMIN)' })
+  @ApiOkResponse({ description: 'Lista paginada de usuários' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@Query() pagination: PaginationDto) {
+    return this.usersService.findAll(pagination);
   }
 
   @Get('me')

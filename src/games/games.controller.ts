@@ -22,6 +22,8 @@ import {
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
 import { GamesService } from './games.service';
+import { Query } from '@nestjs/common';
+import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 
 @ApiTags('Games')
 @ApiBearerAuth()
@@ -65,8 +67,8 @@ export class GamesController {
   @ApiOperation({ summary: 'Listar todos os jogos' })
   @ApiOkResponse({ description: 'Lista de jogos retornada' })
   @UseGuards(JwtAuthGuard)
-  findAll() {
-    return this.gamesService.findAll();
+  findAll(@Query() pagination: PaginationDto) {
+    return this.gamesService.findAll(pagination);
   }
 
   @Get(':id')

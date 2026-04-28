@@ -4,6 +4,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectModel } from '@nestjs/sequelize';
 import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
+import { paginate } from '../common/enums/utils/paginate';
+import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 
 @Injectable()
 export class UsersService {
@@ -19,8 +21,8 @@ async create(createUserDto: CreateUserDto) {
     password: hash });
 }
 
-async findAll() {
-  return this.userModel.findAll();
+async findAll(pagination: PaginationDto) {
+  return paginate(this.userModel, pagination);
 }
 
 async findByEmail(email: string) {

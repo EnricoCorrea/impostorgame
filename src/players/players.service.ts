@@ -6,6 +6,8 @@ import { Player } from './entities/player.entity';
 import { Game } from 'src/games/entities/game.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Word } from 'src/words/entities/word.entity';
+import { paginate } from '../common/enums/utils/paginate';
+import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 
 @Injectable()
 export class PlayersService {
@@ -18,8 +20,8 @@ async create(createPlayerDto: CreatePlayerDto) {
   return this.playerModel.create({ ...createPlayerDto });
 }
 
-async findAll() {
-  return this.playerModel.findAll({
+async findAll(pagination: PaginationDto) {
+  return paginate(this.playerModel, pagination, {
     include: [Game, User, Word]
   });
 }
