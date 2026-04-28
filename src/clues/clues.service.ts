@@ -8,18 +8,35 @@ import { Player } from 'src/players/entities/player.entity';
 import { Word } from 'src/words/entities/word.entity';
 import { paginate } from '../common/enums/utils/paginate';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
+import { hasPhaseExpired } from '../common/enums/utils/phase-timeout-store';
 
 @Injectable()
 export class CluesService {
   constructor(
     @InjectModel(Clue)
     private clueModel: typeof Clue,
+    @InjectModel(Game)
+    private gameModel: typeof Game,
     @InjectModel(Player)
     private playerModel: typeof Player,
   ) { }
 
 
   async create(data: any) {
+    const game = await this.gameModel.findByPk(data.gameId);
+
+    if (!game) {
+      throw new NotFoundException('Game not found');
+    }
+
+    if (game.status !== 'CLUE') {
+      throw new BadRequestException('O jogo não está na fase de dicas');
+    }
+
+    if (hasPhaseExpired(game.id)) {
+      throw new BadRequestException('Tempo para dica expirou; rodada ignorada.');
+    }
+
     const player = await this.playerModel.findByPk(data.playerId, {
       include: [Word],
     });

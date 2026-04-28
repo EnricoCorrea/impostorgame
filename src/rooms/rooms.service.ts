@@ -26,7 +26,20 @@ export class RoomsService {
   ) {}
 
   async create(data: any) {
-    return this.roomModel.create(data);
+    const maxUsers = data.maxPlayers ?? data.maxUsers;
+
+    if (maxUsers == null) {
+      throw new BadRequestException('maxPlayers is required');
+    }
+
+    if (maxUsers > 5) {
+      throw new BadRequestException('A sala pode ter no máximo 5 usuários');
+    }
+
+    return this.roomModel.create({
+      ...data,
+      maxUsers,
+    });
   }
 
   async joinRoom(roomId: number, userId: number) {
@@ -127,6 +140,14 @@ export class RoomsService {
   async update(id: number, data: any) {
     const room = await this.roomModel.findByPk(id);
     if (!room) throw new NotFoundException('Room not found');
+
+    if (data.maxPlayers != null) {
+      if (data.maxPlayers > 5) {
+        throw new BadRequestException('A sala pode ter no máximo 5 usuários');
+      }
+      data.maxUsers = data.maxPlayers;
+    }
+
     await room.update(data);
     return room;
   }

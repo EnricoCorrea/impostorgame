@@ -12,6 +12,11 @@ import { Vote } from 'src/votes/entities/vote.entity';
 import { User } from 'src/users/entities/user.entity';
 import { paginate } from '../common/enums/utils/paginate';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
+import {
+  clearPhaseExpiration,
+  hasPhaseExpired,
+  setPhaseExpiration,
+} from '../common/enums/utils/phase-timeout-store';
 
 @Injectable()
 export class GamesService {
@@ -59,6 +64,7 @@ export class GamesService {
 
     if (!game) throw new NotFoundException('Game not found');
 
+    clearPhaseExpiration(game.id);
     await game.destroy();
 
     return game;
@@ -83,6 +89,12 @@ export class GamesService {
     });
 
     if (!room) throw new NotFoundException('Room not found');
+
+    if (room.users.length < 3) {
+      throw new BadRequestException(
+        'A sala precisa ter pelo menos 3 usuários para iniciar um jogo',
+      );
+    }
 
     const game = await this.gameModel.create({
       roomId,
@@ -128,6 +140,7 @@ export class GamesService {
     game.roundNumber = 1;
 
     await game.save();
+    this.schedulePhaseTimeout(game);
 
     return game;
   }
@@ -168,6 +181,10 @@ export class GamesService {
     const game = await this.gameModel.findByPk(gameId);
 
     if (!game) throw new NotFoundException('Game not found');
+
+    if (hasPhaseExpired(gameId)) {
+      throw new BadRequestException('Tempo de votação expirou; rodada ignorada.');
+    }
 
     if (game.status !== 'VOTING') {
       throw new BadRequestException('Not in voting phase');
@@ -226,6 +243,37 @@ export class GamesService {
     }
 
     return { message: 'Vote registered' };
+  }
+
+  async schedulePhaseTimeout(game: Game) {
+    clearPhaseExpiration(game.id);
+
+    if (game.status !== 'CLUE' && game.status !== 'VOTING') {
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      const currentGame = await this.gameModel.findByPk(game.id, {
+        include: [Player],
+      });
+
+      if (!currentGame || currentGame.finishedAt) {
+        return;
+      }
+
+      if (currentGame.status === 'CLUE') {
+        this.nextPhase(currentGame);
+        await currentGame.save();
+        this.schedulePhaseTimeout(currentGame);
+        return;
+      }
+
+      if (currentGame.status === 'VOTING') {
+        await this.resolveVoting(currentGame.id);
+      }
+    }, 15000);
+
+    setPhaseExpiration(game.id, Date.now() + 15000, timer);
   }
 
   async getGameState(gameId: number, userId: number) {
