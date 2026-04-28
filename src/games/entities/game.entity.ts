@@ -26,7 +26,7 @@ export class Game extends Model {
     roomId: number;
 
     @BelongsTo(() => Room)
-    room: Game;
+    room: Room;
 
     @Column({
     type: DataType.ENUM('IMPOSTOR', 'INNOCENT'),
@@ -51,5 +51,5 @@ export class Game extends Model {
     words: Word[];
 
     @HasMany(() => Player)
-    players: Player;
+    players: Player[];
 }
