@@ -6,6 +6,8 @@ import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { paginate } from '../common/enums/utils/paginate';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
+import { Op } from 'sequelize';
+import { UserFilterDto } from './dto/user-filter.dto';
 
 @Injectable()
 export class UsersService {
@@ -21,8 +23,19 @@ async create(createUserDto: CreateUserDto) {
     password: hash });
 }
 
-async findAll(pagination: PaginationDto) {
-  return paginate(this.userModel, pagination);
+async findAll(pagination: PaginationDto, filters: UserFilterDto) {
+  const where = {
+    ...(filters.name && {
+      name: { [Op.iLike]: `%${filters.name}%` },
+    }),
+    ...(filters.email && {
+      email: {
+        [Op.iLike]: `%${filters.email}%`,
+      },
+    }),
+  };
+
+  return paginate(this.userModel, pagination, { where });
 }
 
 async findByEmail(email: string) {

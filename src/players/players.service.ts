@@ -9,6 +9,7 @@ import { Word } from 'src/words/entities/word.entity';
 import { paginate } from '../common/enums/utils/paginate';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 import { PlayerRole } from 'src/common/enums/player-role';
+import { PlayerFilterDto } from './dto/players-filter.dto';
 
 @Injectable()
 export class PlayersService {
@@ -34,9 +35,24 @@ async create(createPlayerDto: CreatePlayerDto) {
   });
 }
 
-async findAll(pagination: PaginationDto) {
+async findAll(
+  pagination: PaginationDto,
+  filters: PlayerFilterDto,
+) {
+  const where = {
+    ...(filters.game_id && { game_id: filters.game_id }),
+    ...(filters.user_id && { user_id: filters.user_id }),
+    ...(filters.word_id && { word_id: filters.word_id }),
+  };
+
   return paginate(this.playerModel, pagination, {
-    include: [Game, User, Word]
+    where,
+    distinct: true,
+    include: [
+      { model: Game },
+      { model: User },
+      { model: Word },
+    ],
   });
 }
 

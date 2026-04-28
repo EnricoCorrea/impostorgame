@@ -26,6 +26,7 @@ import {
 } from '@nestjs/swagger';
 import { Query } from '@nestjs/common';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
+import { RoomFilterDto } from './dto/rooms-filter.dto';
 
 @ApiTags('Rooms')
 @Controller('rooms')
@@ -56,8 +57,11 @@ export class RoomsController {
   @ApiOkResponse({ description: 'Lista de salas retornada com sucesso' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  findAll(@Query() pagination: PaginationDto) {
-    return this.roomsService.findAll(pagination);
+  findAll(
+    @Query() pagination: PaginationDto,
+    @Query() filters: RoomFilterDto
+  ) {
+    return this.roomsService.findAll(pagination, filters);
   }
 
   @Get(':id')

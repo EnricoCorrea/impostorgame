@@ -5,20 +5,33 @@ import { InjectModel } from '@nestjs/sequelize';
 import { Word } from './entities/word.entity';
 import { paginate } from '../common/enums/utils/paginate';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
+import { Op } from 'sequelize';
+import { WordFilterDto } from './dto/words-filter.dto';
 
 @Injectable()
 export class WordsService {
   constructor(
     @InjectModel(Word)
     private wordModel: typeof Word,
-  ) {}
+  ) { }
 
   async create(createWordDto: CreateWordDto) {
     return this.wordModel.create({ ...createWordDto });
   }
 
-  async findAll(pagination: PaginationDto) {
-    return paginate(this.wordModel, pagination);
+  async findAll(pagination: PaginationDto, filters: WordFilterDto) {
+    const where = {
+      ...(filters.word && {
+        word: { [Op.iLike]: `%${filters.word}%` },
+      }),
+      ...(filters.impostorClue && {
+        impostorClue: {
+          [Op.iLike]: `%${filters.impostorClue}%`,
+        },
+      }),
+    };
+
+    return paginate(this.wordModel, pagination, { where });
   }
 
   async findOne(id: number) {

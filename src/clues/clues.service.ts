@@ -9,6 +9,8 @@ import { Word } from 'src/words/entities/word.entity';
 import { paginate } from '../common/enums/utils/paginate';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 import { hasPhaseExpired } from '../common/enums/utils/phase-timeout-store';
+import { ClueFilterDto } from './dto/clues-filter.dto';
+import { Op } from 'sequelize';
 
 @Injectable()
 export class CluesService {
@@ -86,9 +88,24 @@ export class CluesService {
     });
   }
 
-  async findAll(pagination: PaginationDto) {
+  async findAll(
+    pagination: PaginationDto,
+    filters: ClueFilterDto,
+  ) {
+    const where = {
+      ...(filters.clue && {
+        clue: {
+          [Op.iLike]: `%${filters.clue}%`, // busca parcial
+        },
+      }),
+      ...(filters.game_id && {
+        host_id: filters.game_id, // igualdade
+      }),
+    };
+  
     return paginate(this.clueModel, pagination, {
-      include: [Game, Player],
+      where,
+      distinct: true,
     });
   }
 

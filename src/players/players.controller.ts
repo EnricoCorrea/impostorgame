@@ -26,6 +26,7 @@ import { CreatePlayerDto } from './dto/create-player.dto';
 import { PlayersService } from './players.service';
 import { Query } from '@nestjs/common';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
+import { PlayerFilterDto } from './dto/players-filter.dto';
 
 @ApiTags('Players')
 @ApiBearerAuth()
@@ -46,9 +47,12 @@ export class PlayersController {
   @ApiOperation({ summary: 'Listar todos os jogadores' })
   @ApiOkResponse({ description: 'Lista de jogadores retornada' })
   @UseGuards(JwtAuthGuard)
-  findAll(@Query() pagination: PaginationDto) {
-    return this.playersService.findAll(pagination);
-  }
+  findAll(
+      @Query() pagination: PaginationDto,
+      @Query() filters: PlayerFilterDto
+    ) {
+      return this.playersService.findAll(pagination, filters);
+    }
 
   @Get(':id')
   @ApiOperation({ summary: 'Buscar jogador por ID' })

@@ -26,6 +26,7 @@ import { CreateWordDto } from './dto/create-word.dto';
 import { Query } from '@nestjs/common';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 import { Roles } from 'src/auth/decorator/roles.decorator';
+import { WordFilterDto } from './dto/words-filter.dto';
 
 @ApiTags('Words')
 @ApiBearerAuth()
@@ -46,8 +47,11 @@ export class WordsController {
   @ApiOperation({ summary: 'Listar todas as palavras' })
   @ApiOkResponse({ description: 'Lista de palavras retornada' })
   @UseGuards(JwtAuthGuard)
-  findAll(@Query() pagination: PaginationDto) {
-    return this.wordsService.findAll(pagination);
+  findAll(
+    @Query() pagination: PaginationDto,
+    @Query() filters: WordFilterDto
+  ) {
+    return this.wordsService.findAll(pagination, filters);
   }
 
   @Get(':id')

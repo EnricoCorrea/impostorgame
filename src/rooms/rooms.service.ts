@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
-import { UniqueConstraintError } from 'sequelize';
+import { Op, UniqueConstraintError } from 'sequelize';
 import { Room } from './entities/room.entity';
 import { RoomUser } from './entities/room-user.entity';
 import { User } from '../users/entities/user.entity';
@@ -8,6 +8,7 @@ import { paginate } from '../common/enums/utils/paginate';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 import { Game } from '../games/entities/game.entity';
 import { Player } from '../players/entities/player.entity';
+import { RoomFilterDto } from './dto/rooms-filter.dto';
 
 @Injectable()
 export class RoomsService {
@@ -107,14 +108,26 @@ export class RoomsService {
     }
   }
 
-  async findAll(pagination: PaginationDto) {
-    return paginate(this.roomModel, pagination, {
-      include: [
-        { model: User, as: 'host' },
-        { model: User, as: 'users' },
-      ],
-    });
-  }
+  async findAll(
+  pagination: PaginationDto,
+  filters: RoomFilterDto,
+) {
+  const where = {
+    ...(filters.name && {
+      name: {
+        [Op.iLike]: `%${filters.name}%`, // busca parcial
+      },
+    }),
+    ...(filters.host_id && {
+      host_id: filters.host_id, // igualdade
+    }),
+  };
+
+  return paginate(this.roomModel, pagination, {
+    where,
+    distinct: true,
+  });
+}
 
   async getRoomUsers(roomId: number) {
     const room = await this.roomModel.findByPk(roomId, {

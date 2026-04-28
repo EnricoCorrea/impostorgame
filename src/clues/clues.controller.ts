@@ -26,6 +26,7 @@ import { CreateClueDto } from './dto/create-clue.dto';
 import { CluesService } from './clues.service';
 import { Query } from '@nestjs/common';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
+import { ClueFilterDto } from './dto/clues-filter.dto';
 
 @ApiTags('Clues')
 @ApiBearerAuth()
@@ -46,8 +47,11 @@ export class CluesController {
   @ApiOperation({ summary: 'Listar todas as dicas' })
   @ApiOkResponse({ description: 'Lista de dicas retornada' })
   @UseGuards(JwtAuthGuard)
-  findAll(@Query() pagination: PaginationDto) {
-    return this.cluesService.findAll(pagination);
+  findAll(
+    @Query() pagination: PaginationDto,
+    @Query() filters: ClueFilterDto
+  ) {
+    return this.cluesService.findAll(pagination, filters);
   }
 
   @Get(':id')

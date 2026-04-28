@@ -7,6 +7,7 @@ import { Game } from 'src/games/entities/game.entity';
 import { Player } from 'src/players/entities/player.entity';
 import { paginate } from '../common/enums/utils/paginate';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
+import { VoteFilterDto } from './dto/votes-filter.dto';
 
 @Injectable()
 export class VotesService {
@@ -15,29 +16,32 @@ export class VotesService {
     private voteModel: typeof Vote,
     @InjectModel(Player)
     private playerModel: typeof Player,
-  ) {}
+  ) { }
 
   async create(createVoteDto: CreateVoteDto) {
     return this.voteModel.create(createVoteDto as any);
   }
 
-  async findAll(pagination: PaginationDto) {
+  async findAll(
+    pagination: PaginationDto,
+    filters: VoteFilterDto,
+  ) {
+    const where = {
+      ...(filters.game_id && { game_id: filters.game_id }),
+      ...(filters.voter_id && { voter_id: filters.voter_id }),
+      ...(filters.target_player_id && { target_player_id: filters.target_player_id }),
+    };
+
     return paginate(this.voteModel, pagination, {
+      where,
+      distinct: true,
       include: [
-        {
-          model: Game,
-        },
-      {
-        model: Player,
-        as: 'voter',
-      },
-      {
-        model: Player,
-        as: 'target',
-      },
-    ],
-  });
-}
+        { model: Game },
+        { model: Player, as: 'voter' },
+        { model: Player, as: 'target' },
+      ],
+    });
+  }
 
   async findOne(
     roundNumber: number,
@@ -97,5 +101,5 @@ export class VotesService {
     };
   }
 
-  
+
 }

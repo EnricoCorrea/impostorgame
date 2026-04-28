@@ -17,6 +17,7 @@ import {
   hasPhaseExpired,
   setPhaseExpiration,
 } from '../common/enums/utils/phase-timeout-store';
+import { GameFilterDto } from './dto/games-filter.dto';
 
 @Injectable()
 export class GamesService {
@@ -34,9 +35,21 @@ export class GamesService {
     private roomModel: typeof Room,
   ) { }
 
-  async findAll(pagination: PaginationDto) {
+  async findAll(
+    pagination: PaginationDto,
+    filters: GameFilterDto,
+  ) {
+    const where = {
+      ...(filters.room_id && { room_id: filters.room_id }),
+      ...(filters.round_number && { round_number: filters.round_number }),
+    };
+  
     return paginate(this.gameModel, pagination, {
-      include: [Room],
+      where,
+      distinct: true,
+      include: [
+        { model: Room },
+      ],
     });
   }
 
