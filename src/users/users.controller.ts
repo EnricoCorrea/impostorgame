@@ -1,53 +1,93 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put, UseGuards, Req } from '@nestjs/common';
-import { UsersService } from './users.service';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+  ParseIntPipe,
+} from '@nestjs/common';
+
+import {
+  ApiTags,
+  ApiOperation,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiBadRequestResponse,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
+import { UsersService } from './users.service';
 import { Roles } from 'src/auth/decorator/roles.decorator';
+import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
 import { RolesGuard } from 'src/auth/jwt/roles.guard';
+import { UpdateUserDto } from './dto/update-user.dto';
 
-
+@ApiTags('Users')
+@ApiBearerAuth()
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Criar um novo usuário' })
+  @ApiCreatedResponse({ description: 'Usuário criado com sucesso' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos' })
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
+  @Get()
+  @ApiOperation({ summary: 'Listar todos os usuários' })
+  @ApiOkResponse({ description: 'Lista de usuários retornada com sucesso' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  @Get()
   findAll() {
     return this.usersService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('me')
+  @ApiOperation({ summary: 'Obter dados do usuário autenticado' })
+  @ApiOkResponse({ description: 'Dados do usuário retornados' })
+  @UseGuards(JwtAuthGuard)
   getMe(@Req() req) {
     return req.user;
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
-  }
-
+  @ApiOperation({ summary: 'Buscar usuário por ID (ADMIN)' })
+  @ApiParam({ name: 'id', description: 'ID do usuário' })
+  @ApiOkResponse({ description: 'Usuário encontrado' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.findOne(id);
+  }
+
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
-  }
-
+  @ApiOperation({ summary: 'Atualizar usuário (ADMIN)' })
+  @ApiParam({ name: 'id', description: 'ID do usuário' })
+  @ApiOkResponse({ description: 'Usuário atualizado com sucesso' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return this.usersService.update(id, updateUserDto);
   }
 
+  @Delete(':id')
+  @ApiOperation({ summary: 'Remover usuário (ADMIN)' })
+  @ApiParam({ name: 'id', description: 'ID do usuário' })
+  @ApiOkResponse({ description: 'Usuário removido com sucesso' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.usersService.remove(id);
+  }
 }

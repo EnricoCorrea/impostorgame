@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+
 import { InjectModel } from '@nestjs/sequelize';
 import { Game } from './entities/game.entity';
 import { Room } from '../rooms/entities/room.entity';

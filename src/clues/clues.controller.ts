@@ -1,45 +1,80 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
-import { CluesService } from './clues.service';
-import { CreateClueDto } from './dto/create-clue.dto';
-import { UpdateClueDto } from './dto/update-clue.dto';
-import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
-import { Roles } from 'src/auth/decorator/roles.decorator';
-import { RolesGuard } from 'src/auth/jwt/roles.guard';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  ParseIntPipe,
+} from '@nestjs/common';
 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiBadRequestResponse,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+
+import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
+import { UpdateClueDto } from './dto/update-clue.dto';
+import { CreateClueDto } from './dto/create-clue.dto';
+import { CluesService } from './clues.service';
+
+@ApiTags('Clues')
+@ApiBearerAuth()
 @Controller('clues')
 export class CluesController {
   constructor(private readonly cluesService: CluesService) {}
 
   @Post()
+  @ApiOperation({ summary: 'Criar uma nova dica' })
+  @ApiCreatedResponse({ description: 'Dica criada com sucesso' })
+  @ApiBadRequestResponse({ description: 'Dados inválidos' })
+  @UseGuards(JwtAuthGuard)
   create(@Body() createClueDto: CreateClueDto) {
     return this.cluesService.create(createClueDto);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
   @Get()
+  @ApiOperation({ summary: 'Listar todas as dicas' })
+  @ApiOkResponse({ description: 'Lista de dicas retornada' })
+  @UseGuards(JwtAuthGuard)
   findAll() {
     return this.cluesService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.cluesService.findOne(+id);
+  @ApiOperation({ summary: 'Buscar dica por ID' })
+  @ApiParam({ name: 'id', description: 'ID da dica' })
+  @ApiOkResponse({ description: 'Dica encontrada' })
+  @UseGuards(JwtAuthGuard)
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.cluesService.findOne(id);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateClueDto: UpdateClueDto) {
-    return this.cluesService.update(+id, updateClueDto);
+  @ApiOperation({ summary: 'Atualizar dica' })
+  @ApiParam({ name: 'id', description: 'ID da dica' })
+  @ApiOkResponse({ description: 'Dica atualizada com sucesso' })
+  @UseGuards(JwtAuthGuard)
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateClueDto: UpdateClueDto,
+  ) {
+    return this.cluesService.update(id, updateClueDto);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.cluesService.remove(+id);
+  @ApiOperation({ summary: 'Remover dica' })
+  @ApiParam({ name: 'id', description: 'ID da dica' })
+  @ApiOkResponse({ description: 'Dica removida com sucesso' })
+  @UseGuards(JwtAuthGuard)
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.cluesService.remove(id);
   }
 }

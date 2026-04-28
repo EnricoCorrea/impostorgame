@@ -7,78 +7,104 @@ import {
   Param,
   Delete,
   UseGuards,
+  Req,
   ParseIntPipe,
-  Query,
 } from '@nestjs/common';
 
-import { GamesService } from './games.service';
-import { UpdateGameDto } from './dto/update-game.dto';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiBadRequestResponse,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
-import { Roles } from 'src/auth/decorator/roles.decorator';
-import { RolesGuard } from 'src/auth/jwt/roles.guard';
+import { GamesService } from './games.service';
 
+@ApiTags('Games')
+@ApiBearerAuth()
 @Controller('games')
 export class GamesController {
   constructor(private readonly gamesService: GamesService) {}
 
   @Post('room/:roomId')
+  @ApiOperation({ summary: 'Criar um novo jogo em uma sala' })
+  @ApiParam({ name: 'roomId', description: 'ID da sala' })
+  @ApiCreatedResponse({ description: 'Jogo criado com sucesso' })
+  @ApiBadRequestResponse({ description: 'Já existe jogo ativo na sala' })
+  @UseGuards(JwtAuthGuard)
   createGame(@Param('roomId', ParseIntPipe) roomId: number) {
     return this.gamesService.createGame(roomId);
   }
 
   @Post(':id/start')
+  @ApiOperation({ summary: 'Iniciar um jogo' })
+  @ApiParam({ name: 'id', description: 'ID do jogo' })
+  @ApiOkResponse({ description: 'Jogo iniciado com sucesso' })
+  @UseGuards(JwtAuthGuard)
   startGame(@Param('id', ParseIntPipe) id: number) {
     return this.gamesService.startGame(id);
   }
 
   @Post(':id/vote')
+  @ApiOperation({ summary: 'Registrar voto no jogo' })
+  @ApiParam({ name: 'id', description: 'ID do jogo' })
+  @ApiOkResponse({ description: 'Voto registrado' })
+  @UseGuards(JwtAuthGuard)
   vote(
-    @Param('id', ParseIntPipe) gameId: number,
-    @Body() body: { userId: number; targetId: number },
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req,
+    @Body() body: { targetId: number },
   ) {
-    return this.gamesService.vote(
-      gameId,
-      body.userId,
-      body.targetId,
-    );
+    return this.gamesService.vote(id, req.user.id, body.targetId);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
   @Get()
+  @ApiOperation({ summary: 'Listar todos os jogos' })
+  @ApiOkResponse({ description: 'Lista de jogos retornada' })
+  @UseGuards(JwtAuthGuard)
   findAll() {
     return this.gamesService.findAll();
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
   @Get(':id')
+  @ApiOperation({ summary: 'Buscar jogo por ID' })
+  @ApiParam({ name: 'id', description: 'ID do jogo' })
+  @ApiOkResponse({ description: 'Jogo encontrado' })
+  @UseGuards(JwtAuthGuard)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.gamesService.findOne(id);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
+  @Get(':id/state')
+  @ApiOperation({ summary: 'Obter estado do jogo para o usuário' })
+  @ApiParam({ name: 'id', description: 'ID do jogo' })
+  @ApiOkResponse({ description: 'Estado do jogo retornado' })
+  @UseGuards(JwtAuthGuard)
+  getState(@Param('id', ParseIntPipe) id: number, @Req() req) {
+    return this.gamesService.getGameState(id, req.user.id);
+  }
+
   @Patch(':id')
+  @ApiOperation({ summary: 'Atualizar jogo' })
+  @ApiParam({ name: 'id', description: 'ID do jogo' })
+  @ApiOkResponse({ description: 'Jogo atualizado com sucesso' })
+  @UseGuards(JwtAuthGuard)
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateGameDto: UpdateGameDto,
+    @Body() updateGameDto: any,
   ) {
     return this.gamesService.update(id, updateGameDto);
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
   @Delete(':id')
+  @ApiOperation({ summary: 'Remover jogo' })
+  @ApiParam({ name: 'id', description: 'ID do jogo' })
+  @ApiOkResponse({ description: 'Jogo removido com sucesso' })
+  @UseGuards(JwtAuthGuard)
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.gamesService.remove(id);
   }
-
-  @Get(':id/state')
-  getState(
-  @Param('id', ParseIntPipe) gameId: number,
-  @Query('userId') userId: number
-  ) {
-  return this.gamesService.getGameState(gameId, Number(userId));
-}
 }
