@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 
 import { InjectModel } from '@nestjs/sequelize';
+import { Op } from 'sequelize';
 import { Game } from './entities/game.entity';
 import { Room } from '../rooms/entities/room.entity';
 import { Player } from 'src/players/entities/player.entity';
@@ -141,13 +142,33 @@ export class GamesService {
       throw new BadRequestException('Game already started');
     }
 
-    if (game.players.length < 3) {
+    const room = await this.roomModel.findByPk(game.roomId, {
+      include: [User],
+    });
+
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    if (room.users.length < 3) {
+      throw new BadRequestException(
+        'O jogo precisa de pelo menos 3 jogadores na sala para começar',
+      );
+    }
+
+    await this.syncWaitingGamePlayers(game, room.users);
+
+    const players = await this.playerModel.findAll({
+      where: { gameId },
+    });
+
+    if (players.length < 3) {
       throw new BadRequestException('Not enough players');
     }
 
     await this.voteModel.destroy({ where: { gameId } });
 
-    await this.assignRoles(game.players);
+    await this.assignRoles(players);
 
     game.status = 'CLUE';
     game.roundNumber = 1;
@@ -156,6 +177,37 @@ export class GamesService {
     this.schedulePhaseTimeout(game);
 
     return game;
+  }
+
+  async syncWaitingGamePlayers(game: Game, users: User[]) {
+    const currentUserIds = users.map((user) => user.id);
+
+    const existingPlayers = await this.playerModel.findAll({
+      where: { gameId: game.id },
+    });
+
+    const existingUserIds = existingPlayers.map((player) => player.userId);
+
+    for (const user of users) {
+      if (!existingUserIds.includes(user.id)) {
+        await this.playerModel.create({
+          gameId: game.id,
+          userId: user.id,
+          isAlive: true,
+        });
+      }
+    }
+
+    if (existingUserIds.length > 0) {
+      await this.playerModel.destroy({
+        where: {
+          gameId: game.id,
+          userId: {
+            [Op.notIn]: currentUserIds,
+          },
+        },
+      });
+    }
   }
 
   async assignRoles(players: Player[]) {

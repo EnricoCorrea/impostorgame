@@ -13,7 +13,7 @@ import { GamesService } from './games.service';
 })
 export class GamesGateway {
   @WebSocketServer()
-  server: Server;
+  declare server: Server;
 
   constructor(private gamesService: GamesService) {}
 

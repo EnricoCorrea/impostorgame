@@ -96,6 +96,20 @@ export class RoomsService {
         };
       }
 
+      if (activeGame && activeGame.status === 'WAITING') {
+        await this.playerModel.findOrCreate({
+          where: {
+            gameId: activeGame.id,
+            userId,
+          },
+          defaults: {
+            gameId: activeGame.id,
+            userId,
+            isAlive: true,
+          },
+        });
+      }
+
       return roomUser;
     } catch (err) {
       if (err instanceof UniqueConstraintError) {
