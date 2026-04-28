@@ -27,7 +27,7 @@ export class GamesService {
 
     @InjectModel(Room)
     private roomModel: typeof Room,
-  ) {}
+  ) { }
 
   async findAll(pagination: PaginationDto) {
     return paginate(this.gameModel, pagination, {
@@ -46,13 +46,13 @@ export class GamesService {
   }
 
   async update(id: number, data: any) {
-     const game = await this.gameModel.findByPk(id); 
-     if (!game) {
-       throw new NotFoundException('Game not found'); 
-      } 
-      await game.update(data); 
-      return game; 
+    const game = await this.gameModel.findByPk(id);
+    if (!game) {
+      throw new NotFoundException('Game not found');
     }
+    await game.update(data);
+    return game;
+  }
 
   async remove(id: number) {
     const game = await this.gameModel.findByPk(id);
@@ -229,49 +229,75 @@ export class GamesService {
   }
 
   async getGameState(gameId: number, userId: number) {
-  const game = await this.gameModel.findByPk(gameId, {
-    include: [Player],
-  });
+    const game = await this.gameModel.findByPk(gameId, {
+      include: [Player],
+    });
 
-  if (!game) throw new NotFoundException('Game not found');
+    if (!game) throw new NotFoundException('Game not found');
 
-  const me = game.players.find(p => p.userId === userId);
+    const me = game.players.find(p => p.userId === userId);
 
-  return {
-    status: game.status,
-    round: game.roundNumber,
-    finishedAt: game.finishedAt,
-    winner: game.finishedAt ? game.winner : null,
+    return {
+      status: game.status,
+      round: game.roundNumber,
+      finishedAt: game.finishedAt,
+      winner: game.finishedAt ? game.winner : null,
 
-    players: game.players.map(p => ({
-      id: p.id,
-      userId: p.userId,
-      isAlive: p.isAlive,
-    })),
+      players: game.players.map(p => ({
+        id: p.id,
+        userId: p.userId,
+        isAlive: p.isAlive,
+      })),
 
-    myRole: me?.role || null,
-  };
-}
+      myRole: me?.role || null,
+    };
+  }
 
   async resolveVoting(gameId: number) {
     const votes = await this.voteModel.findAll({
       where: { gameId },
     });
 
-    const count = {};
-
-    for (const v of votes) {
-      count[v.targetPlayerId] =
-        (count[v.targetPlayerId] || 0) + 1;
+    if (votes.length === 0) {
+      return this.checkWin(gameId);
     }
 
-    const eliminatedId = Object.keys(count).reduce((a, b) =>
-      count[a] > count[b] ? a : b,
+    const count: Record<number, number> = {};
+
+    for (const vote of votes) {
+      count[vote.targetPlayerId] =
+        (count[vote.targetPlayerId] || 0) + 1;
+    }
+
+    const maxVotes = Math.max(...Object.values(count));
+
+    const tiedPlayers = Object.keys(count).filter(
+      (id) => count[Number(id)] === maxVotes,
     );
 
-    const player = await this.playerModel.findByPk(
-      Number(eliminatedId),
-    );
+    // Se tiver empate ninguém sai
+    if (tiedPlayers.length > 1) {
+      await this.voteModel.destroy({
+        where: { gameId },
+      });
+
+      const game = await this.gameModel.findByPk(gameId);
+
+      if (!game) {
+        throw new NotFoundException('Game not found');
+      }
+
+      this.nextPhase(game);
+      await game.save();
+
+      return {
+        message: 'Tie vote. No player eliminated.',
+      };
+    }
+
+    const eliminatedId = Number(tiedPlayers[0]);
+
+    const player = await this.playerModel.findByPk(eliminatedId);
 
     if (!player) {
       throw new NotFoundException('Player not found');
@@ -280,7 +306,9 @@ export class GamesService {
     player.isAlive = false;
     await player.save();
 
-    await this.voteModel.destroy({ where: { gameId } });
+    await this.voteModel.destroy({
+      where: { gameId },
+    });
 
     return this.checkWin(gameId);
   }

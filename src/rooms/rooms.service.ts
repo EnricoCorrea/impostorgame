@@ -6,6 +6,8 @@ import { RoomUser } from './entities/room-user.entity';
 import { User } from '../users/entities/user.entity';
 import { paginate } from '../common/enums/utils/paginate';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
+import { Game } from '../games/entities/game.entity';
+import { Player } from '../players/entities/player.entity';
 
 @Injectable()
 export class RoomsService {
@@ -15,6 +17,12 @@ export class RoomsService {
 
     @InjectModel(RoomUser)
     private roomUserModel: typeof RoomUser,
+
+    @InjectModel(Game)
+    private gameModel: typeof Game,
+
+    @InjectModel(Player)
+    private playerModel: typeof Player,
   ) {}
 
   async create(data: any) {
@@ -27,28 +35,61 @@ export class RoomsService {
     }
 
     const room = await this.roomModel.findByPk(roomId);
-    if (!room) throw new NotFoundException('Room not found');
 
-    const currentUsers = await this.roomUserModel.count({ where: { roomId } });
+    if (!room) {
+      throw new NotFoundException('Room not found');
+    }
+
+    // RN008 - jogo em andamento
+    const activeGame = await this.gameModel.findOne({
+      where: {
+        roomId,
+        finishedAt: null,
+      },
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (
+      activeGame &&
+      activeGame.status !== 'WAITING'
+    ) {
+      throw new BadRequestException(
+        'Cannot join room while a game is in progress'
+      );
+    }
+
+    const currentUsers =
+      await this.roomUserModel.count({
+        where: { roomId },
+      });
+
     if (currentUsers >= room.maxUsers) {
-      throw new BadRequestException('Room is full');
+      throw new BadRequestException(
+        'Room is full'
+      );
     }
 
     try {
-      const [roomUser, created] = await this.roomUserModel.findOrCreate({
-        where: { roomId, userId },
-        defaults: { roomId, userId },
-      });
+      const [roomUser, created] =
+        await this.roomUserModel.findOrCreate({
+          where: { roomId, userId },
+          defaults: { roomId, userId },
+        });
 
       if (!created) {
-        return { message: 'Already in room' };
+        return {
+          message: 'Already in room',
+        };
       }
 
       return roomUser;
     } catch (err) {
       if (err instanceof UniqueConstraintError) {
-        return { message: 'Already in room' };
+        return {
+          message: 'Already in room',
+        };
       }
+
       throw err;
     }
   }
@@ -97,11 +138,44 @@ export class RoomsService {
     return room;
   }
 
-  async leaveRoom(roomId: number, userId: number) {
-    const deleted = await this.roomUserModel.destroy({
-      where: { roomId, userId },
+async leaveRoom(roomId: number, userId: number) {
+  const activeGame = await this.gameModel.findOne({
+    where: {
+      roomId,
+      finishedAt: null,
+    },
+    order: [['createdAt', 'DESC']],
+  });
+
+  // se existe partida em andamento → elimina jogador
+  if (
+    activeGame &&
+    activeGame.status !== 'WAITING'
+  ) {
+    const player = await this.playerModel.findOne({
+      where: {
+        gameId: activeGame.id,
+        userId,
+      },
     });
 
-    return { success: deleted > 0 };
+    if (player) {
+      player.isAlive = false;
+      await player.save();
+    }
   }
+
+  const deleted = await this.roomUserModel.destroy({
+    where: { roomId, userId },
+  });
+
+  return {
+    success: deleted > 0,
+    message:
+      activeGame &&
+      activeGame.status !== 'WAITING'
+        ? 'Player disconnected and was eliminated from the match'
+        : 'User left room successfully',
+  };
+}
 }
