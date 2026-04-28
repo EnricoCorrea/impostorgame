@@ -24,40 +24,40 @@ export class Player extends Model {
     @Column({
         field: "game_id"
     })
-    gameId: number;
+    declare gameId: number;
 
     @ForeignKey(() => User)
     
     @Column({
         field: "user_id"
     })
-    userId: number;
+    declare userId: number;
     
     @ForeignKey(() => Word)
     
     @Column({
         field: "word_id"
     })
-    wordId: number;
+    declare wordId: number;
 
     @Column({ 
        type:  DataType.ENUM('IMPOSTOR','INNOCENT')
     })
-    role: string;
+    declare role: string;
 
     @Column({
         field: 'is_alive'
     })
-    isAlive: boolean;
+    declare isAlive: boolean;
 
     @BelongsTo(() => Game)
-    game: Game;
+    declare game: Game;
     
     @BelongsTo(() => User)
-    user: User;
+    declare user: User;
     
     @BelongsTo(() => Word)
-    word: Word;
+    declare word: Word;
 } 
 
 

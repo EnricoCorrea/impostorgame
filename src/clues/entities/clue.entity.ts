@@ -23,26 +23,26 @@ export class Clue extends Model {
     @Column({
         field: "game_id"
     })
-    gameId: number;
+    declare gameId: number;
 
     @ForeignKey(() => Player)
     
     @Column({
         field: "player_id"
     })
-    playerId: number;
+    declare playerId: number;
        
     @Column({field: "round_number"})
-    roundNumber: string;
+    declare roundNumber: string;
 
     @Column
-    clue: string;
+    declare clue: string;
 
     @BelongsTo(() => Game)
-    games: Game;
+    declare games: Game;
     
     @BelongsTo(() => Player)
-    players: Player;
+    declare players: Player;
 
 } 
 

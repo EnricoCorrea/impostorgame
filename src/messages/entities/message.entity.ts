@@ -23,23 +23,23 @@ export class Message extends Model {
     @Column({
         field: "game_id"
     })
-    gameId: number;
+    declare gameId: number;
 
     @ForeignKey(() => Player)
     
     @Column({
         field: "player_id"
     })
-    playerId: number;
+    declare playerId: number;
        
     @Column
-    content: string;
+    declare content: string;
 
     @BelongsTo(() => Game)
-    games: Game;
+    declare games: Game;
     
     @BelongsTo(() => Player)
-    players: Player;
+    declare players: Player;
 
 } 
 

@@ -23,33 +23,33 @@ import { GameWord } from 'src/words/entities/game-word.entity'
 export class Game extends Model {
     @ForeignKey(() => Room)
     @Column({ field: 'room_id'})
-    roomId: number;
+    declare roomId: number;
 
     @BelongsTo(() => Room)
-    room: Room;
+    declare room: Room;
 
     @Column({
     type: DataType.ENUM('IMPOSTOR', 'INNOCENT'),
     })
-    winner: string;
+    declare winner: string;
 
     @Column({
     type: DataType.ENUM('WAITING', 'CLUE', 'DISCUSSING', 'VOTING'),
     })
-    status: string;
+    declare status: string;
 
     @Column({ field: 'round_number'})
-    roundNumber: number;
+    declare roundNumber: number;
 
     @Column({ field: 'started_at' })
-    startedAt: Date;
+    declare startedAt: Date;
 
     @Column({ field: 'finished_at' })
-    finishedAt: Date;
+    declare finishedAt: Date;
 
     @BelongsToMany(() => Word, () => GameWord)
-    words: Word[];
+    declare words: Word[];
 
     @HasMany(() => Player)
-    players: Player[];
+    declare players: Player[];
 }

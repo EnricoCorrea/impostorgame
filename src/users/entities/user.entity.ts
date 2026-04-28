@@ -27,8 +27,8 @@ export class User extends Model {
   declare role: string;
 
   @BelongsToMany(() => Room, () => RoomUser, 'user_id', 'room_id')
-  rooms: Room[];
+  declare rooms: Room[];
 
   @HasMany(() => Player)
-  players: Player[];
+  declare players: Player[];
 }

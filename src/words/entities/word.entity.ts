@@ -17,14 +17,14 @@ import { GameWord } from 'src/words/entities/game-word.entity'
 
 export class Word extends Model {
     @Column
-    word: string;
+    declare word: string;
 
     @Column({ field: 'impostor_clue'})
-    impostorClue: string;
+    declare impostorClue: string;
 
     @BelongsToMany(() => Game, () => GameWord)
-    games: Game[];
+    declare games: Game[];
 
     @HasMany(() => Player)
-    players: Player;
+    declare players: Player;
 }

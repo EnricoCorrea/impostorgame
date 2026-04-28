@@ -18,28 +18,28 @@ import { Player } from 'src/players/entities/player.entity';
 export class Vote extends Model {
     @PrimaryKey
     @Column({ field: 'round_number' })
-    roundNumber: number;
+    declare roundNumber: number;
 
     @PrimaryKey
     @ForeignKey(() => Game)
     @Column({ field: 'game_id' })
-    gameId: number;
+    declare gameId: number;
 
     @PrimaryKey
     @ForeignKey(() => Player)
     @Column({ field: 'voter_id' })
-    voterId: number;
+    declare voterId: number;
 
     @ForeignKey(() => Player)
     @Column({ field: 'target_player_id' })
-    targetPlayerId: number;
+    declare targetPlayerId: number;
 
     @BelongsTo(() => Game)
-    game: Game;
+    declare game: Game;
 
     @BelongsTo(() => Player, 'voter_id')
-    voter: Player;
+    declare voter: Player;
 
     @BelongsTo(() => Player, 'target_player_id')
-    target: Player;
+    declare target: Player;
 } 
