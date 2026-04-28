@@ -3,6 +3,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 
 import { GamesService } from './games.service';
 import { GamesController } from './games.controller';
+import { GamesGateway } from './games.gateway';
 
 import { Game } from './entities/game.entity';
 import { Player } from 'src/players/entities/player.entity';
@@ -19,6 +20,6 @@ import { Room } from 'src/rooms/entities/room.entity';
     ]),
   ],
   controllers: [GamesController],
-  providers: [GamesService],
+  providers: [GamesService, GamesGateway],
 })
 export class GamesModule {}

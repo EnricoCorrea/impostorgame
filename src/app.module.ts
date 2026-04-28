@@ -11,9 +11,13 @@ import { PlayersModule } from './players/players.module';
 import { WordsModule } from './words/words.module';
 import { CluesModule } from './clues/clues.module';
 import { AuthModule } from './auth/auth.module';
+import { GamesGateway } from './games/games.gateway'
 
 @Module({
-  imports: [RoomsModule, UsersModule, GamesModule,
+  imports: [
+    RoomsModule,
+    UsersModule,
+    GamesModule,
     SequelizeModule.forRoot({
       dialect: 'postgres',
       host: '26.154.169.75',
@@ -21,7 +25,6 @@ import { AuthModule } from './auth/auth.module';
       username: 'amigo',
       password: 'Cefet123!',
       database: 'impostor_game',
-
       autoLoadModels: true,
       synchronize: false,
       define: {
@@ -34,7 +37,8 @@ import { AuthModule } from './auth/auth.module';
     PlayersModule,
     WordsModule,
     CluesModule,
-    AuthModule],
+    AuthModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
