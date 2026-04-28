@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Vote } from './entities/vote.entity';
 import { CreateVoteDto } from './dto/create-vote.dto';
@@ -11,6 +11,8 @@ export class VotesService {
   constructor(
     @InjectModel(Vote)
     private voteModel: typeof Vote,
+    @InjectModel(Player)
+    private playerModel: typeof Player,
   ) {}
 
   async create(createVoteDto: CreateVoteDto) {
@@ -92,4 +94,6 @@ export class VotesService {
       message: 'Vote removed successfully',
     };
   }
+
+  
 }
