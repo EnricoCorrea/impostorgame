@@ -6,10 +6,12 @@ import {
   BelongsTo,
   HasMany,
   DataType,
+  BelongsToMany,
 } from 'sequelize-typescript';
 
 import { User } from 'src/users/entities/user.entity';
 import { Game } from 'src/games/entities/game.entity';
+import { RoomUser } from './room-user.entity';
 
 @Table({
   tableName: 'rooms',
@@ -19,26 +21,24 @@ import { Game } from 'src/games/entities/game.entity';
 })
 export class Room extends Model {
   @Column
-  name: string;
+  name!: string;
 
   @ForeignKey(() => User)
-  @Column({ field: 'host_id' })
-  hostId: number;
+  @Column({ field: 'host_id', allowNull: false })
+  hostId!: number;
 
-  @BelongsTo(() => User)
-  host: User;
+  @Column({ type: DataType.ENUM('WAITING','PLAYING','CLOSED'), allowNull: false })
+  status!: string;
 
-  @Column({
-    type: DataType.ENUM('WAITING', 'PLAYING', 'CLOSED'),
-  })
-  status: string;
-
-  @Column({ field: 'max_users' })
-  maxUsers: number;
+  @Column({ field: 'max_users', allowNull: false })
+  maxUsers!: number;
 
   @Column({ field: 'closed_at' })
-  closedAt: Date;
-  
+  closedAt!: Date;
+
   @HasMany(() => Game)
-  games: Game[];
+  games!: Game[];
+
+  @BelongsToMany(() => User, () => RoomUser)
+  users!: User[];
 }

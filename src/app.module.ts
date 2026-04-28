@@ -24,7 +24,9 @@ import { AuthModule } from './auth/auth.module';
 
       autoLoadModels: true,
       synchronize: false,
-
+      define: {
+        timestamps: false,
+      },
       logging: true,
     }),
     MessagesModule,

@@ -51,13 +51,13 @@ export class Player extends Model {
     isAlive: boolean;
 
     @BelongsTo(() => Game)
-    games: Game;
+    game: Game;
     
     @BelongsTo(() => User)
-    users: User;
+    user: User;
     
     @BelongsTo(() => Word)
-    words: Word;
+    word: Word;
 } 
 
 
