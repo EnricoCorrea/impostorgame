@@ -1,98 +1,206 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+![alt text](src/common/enums/images/hd-red-among-us-mini-crewmate-baby-sus-sticky-note-hat-png-7339616951222967oki7a2sjw.png)
+# 🎮 Impostor Game API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API backend para gerenciamento de partidas do jogo **Impostor Game**, desenvolvida com **NestJS** e **Sequelize**, utilizando **PostgreSQL** como banco de dados.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## 🚀 Tecnologias
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+* Node.js
+* NestJS
+* Sequelize (ORM)
+* PostgreSQL
+* Swagger (documentação)
+* JWT (autenticação)
 
-## Project setup
+---
 
-```bash
-$ npm install
+## 📌 Funcionalidades
+
+* 👤 Gerenciamento de usuários
+* 🏠 Criação e gerenciamento de salas
+* 🎮 Criação de partidas (games)
+* 🧑‍🤝‍🧑 Gerenciamento de jogadores
+* 🗳️ Sistema de votação
+* 🔍 Filtros e paginação em endpoints
+* 🔐 Autenticação com JWT e controle de roles
+
+---
+
+## 📂 Estrutura do Projeto
+
+```
+src/
+ ├── auth/
+ ├── clues/
+ ├── words/
+ ├── games/
+ ├── messages/
+ ├── players/
+ ├── rooms/
+ ├── users/
+ ├── votes/
+ ├── common/
+ │    └── dto/
+ │         └── pagination.dto.ts
 ```
 
-## Compile and run the project
+---
+
+## ⚙️ Instalação
 
 ```bash
-# development
-$ npm run start
+# Clonar o repositório
+git clone https://github.com/EnricoCorrea/impostorgame.git
 
-# watch mode
-$ npm run start:dev
+# Entrar no projeto
+cd impostorgame
 
-# production mode
-$ npm run start:prod
+# Instalar dependências
+npm install
 ```
 
-## Run tests
+---
+
+## 🔧 Configuração
+
+Crie um arquivo `.env` na raiz do projeto:
+
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USERNAME=postgres
+DB_PASSWORD=senha
+DB_NAME=impostorgame
+
+JWT_SECRET=sua_chave_secreta
+```
+
+---
+
+## ▶️ Executando o projeto
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run start:dev
 ```
 
-## Deployment
+A API estará disponível em:
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```
+http://localhost:3001
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
-## Resources
+## 📘 Documentação (Swagger)
 
-Check out a few resources that may come in handy when working with NestJS:
+Acesse:
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```
+http://localhost:3001/api
+```
 
-## Support
+---
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## 🔐 Autenticação
 
-## Stay in touch
+A API utiliza JWT:
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+1. Faça login
+2. Copie o token
+3. Clique em **Authorize** no Swagger
+4. Cole o token no formato:
 
-## License
+```
+Bearer SEU_TOKEN
+```
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+---
+
+## 📄 Paginação
+
+Todos os endpoints de listagem suportam:
+
+```
+?page=1&limit=10
+```
+
+---
+
+## 🔍 Filtros
+
+Cada entidade possui pelo menos 2 filtros:
+
+### Exemplos:
+
+#### Users
+
+```
+/users?email=teste@email.com&role=ADMIN
+```
+
+#### Rooms
+
+```
+/rooms?name=sala&hostId=1
+```
+
+#### Games
+
+```
+/games?roomId=1&roundNumber=2
+```
+
+#### Players
+
+```
+/players?gameId=1&userId=2
+```
+
+#### Votes
+
+```
+/votes?gameId=1&targetId=3
+```
+
+---
+
+## 🎮 Fluxo do Jogo
+
+1. Criar sala
+2. Usuários entram na sala
+3. Iniciar jogo
+4. Jogadores são criados automaticamente
+5. Rodadas e votos são executados
+
+---
+
+## 🧪 Testes com Postman
+
+Exemplo de criação de sala:
+
+```json
+{
+  "name": "Sala Teste",
+  "hostId": 1,
+  "status": "WAITING",
+  "maxUsers": 5
+}
+```
+
+---
+
+## ⚠️ Padrões do Projeto
+
+* Código usa **camelCase**
+* Banco usa **snake_case** (via `field`)
+* DTOs alinhados com Models
+* Paginação centralizada (`PaginationDto`)
+* Filtros específicos por entidade
+
+---
+
+## 📄 Licença
+
+Este projeto é para fins acadêmicos.
