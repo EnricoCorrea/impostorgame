@@ -5,7 +5,7 @@ export class CreateRoomDto {
   declare name: string;
 
   @ApiProperty({ example: 10 })
-  declare maxPlayers: number;
+  declare maxUsers: number;
 }
 
 export class JoinRoomDto {
