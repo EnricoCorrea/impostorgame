@@ -1,4 +1,4 @@
-![alt text](src/common/enums/images/hd-red-among-us-mini-crewmate-baby-sus-sticky-note-hat-png-7339616951222967oki7a2sjw.png)
+![alt text](<src/common/enums/images/hd-red-among-us-mini-crewmate-baby-sus-sticky-note-hat-png-7339616951222967oki7a2sjw (2).png>)
 # 🎮 Impostor Game API
 
 API backend para gerenciamento de partidas do jogo **Impostor Game**, desenvolvida com **NestJS** e **Sequelize**, utilizando **PostgreSQL** como banco de dados.
