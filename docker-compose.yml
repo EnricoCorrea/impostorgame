@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: impostor_game
+      POSTGRES_USER: impostor
+      POSTGRES_PASSWORD: impostor123
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./banco_scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U impostor -d impostor_game"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: impostor
+      DB_PASS: impostor123
+      DB_NAME: impostor_game
+      DB_SYNC: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+volumes:
+  pg_data:

@@ -38,7 +38,6 @@ export class MessagesController {
   @ApiOperation({ summary: 'Criar uma nova mensagem' })
   @ApiCreatedResponse({ description: 'Mensagem criada com sucesso' })
   @ApiBadRequestResponse({ description: 'Dados inválidos' })
-  @UseGuards(JwtAuthGuard)
   create(@Body() createMessageDto: CreateMessageDto) {
     return this.messagesService.create(createMessageDto);
   }
@@ -46,7 +45,6 @@ export class MessagesController {
   @Get()
   @ApiOperation({ summary: 'Listar todas as mensagens' })
   @ApiOkResponse({ description: 'Lista de mensagens retornada' })
-  @UseGuards(JwtAuthGuard)
   findAll(
       @Query() pagination: PaginationDto,
       @Query() filters: MessageFilterDto

@@ -9,7 +9,7 @@ import { Game } from 'src/games/entities/game.entity';
 import { Word } from './word.entity';
 
 @Table({
-    tableName: 'words',
+    tableName: 'game_words',
     timestamps: false,
 })
 

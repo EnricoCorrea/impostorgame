@@ -10,6 +10,7 @@ import { Room } from '../rooms/entities/room.entity';
 import { Player } from 'src/players/entities/player.entity';
 import { Vote } from 'src/votes/entities/vote.entity';
 import { User } from 'src/users/entities/user.entity';
+import { Word } from 'src/words/entities/word.entity';
 import { paginate } from '../common/enums/utils/paginate';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 import {
@@ -33,6 +34,9 @@ export class GamesService {
 
     @InjectModel(Room)
     private roomModel: typeof Room,
+
+    @InjectModel(Word)
+    private wordModel: typeof Word,
   ) { }
 
   async findAll(
@@ -98,7 +102,7 @@ export class GamesService {
     }
 
     const room = await this.roomModel.findByPk(roomId, {
-      include: [User],
+      include: [{ model: User, as: 'users' }],
     });
 
     if (!room) throw new NotFoundException('Room not found');
@@ -149,11 +153,19 @@ export class GamesService {
 
     await this.assignRoles(game.players);
 
+    const words = await this.wordModel.findAll();
+    if (words.length > 0) {
+      const word = words[Math.floor(Math.random() * words.length)];
+      for (const player of game.players) {
+        player.wordId = word.id;
+        await player.save();
+      }
+    }
+
     game.status = 'CLUE';
     game.roundNumber = 1;
 
     await game.save();
-    this.schedulePhaseTimeout(game);
 
     return game;
   }
@@ -291,7 +303,7 @@ export class GamesService {
 
   async getGameState(gameId: number, userId: number) {
     const game = await this.gameModel.findByPk(gameId, {
-      include: [Player],
+      include: [{ model: Player, include: [Word] }],
     });
 
     if (!game) throw new NotFoundException('Game not found');
@@ -311,6 +323,7 @@ export class GamesService {
       })),
 
       myRole: me?.role || null,
+      myWord: me?.role === 'IMPOSTOR' ? me?.word?.impostorClue : me?.word?.word,
     };
   }
 

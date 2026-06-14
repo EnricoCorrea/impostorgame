@@ -60,7 +60,7 @@ export class RoomsService {
         roomId,
         finishedAt: null,
       },
-      order: [['createdAt', 'DESC']],
+      order: [['started_at', 'DESC']],
     });
 
     if (

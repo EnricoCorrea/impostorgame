@@ -53,10 +53,8 @@ export class RoomsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar todas as salas (ADMIN)' })
+  @ApiOperation({ summary: 'Listar todas as salas' })
   @ApiOkResponse({ description: 'Lista de salas retornada com sucesso' })
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
   findAll(
     @Query() pagination: PaginationDto,
     @Query() filters: RoomFilterDto

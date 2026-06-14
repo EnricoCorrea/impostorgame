@@ -37,8 +37,8 @@ export class Room extends Model {
   closedAt!: Date;
 
   @HasMany(() => Game)
-  games!: Game[];
+  declare games: Game[];
 
   @BelongsToMany(() => User, () => RoomUser)
-  users!: User[];
+  declare users: User[];
 }

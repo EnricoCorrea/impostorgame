@@ -45,10 +45,8 @@ export class UsersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar usuários com paginação (ADMIN)' })
+  @ApiOperation({ summary: 'Listar usuários com paginação' })
   @ApiOkResponse({ description: 'Lista paginada de usuários' })
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
   findAll(
     @Query() pagination: PaginationDto,
     @Query() filters: UserFilterDto

@@ -39,6 +39,13 @@ async handleStart(
     .emit('game_updated', game);
 }
 
+  @SubscribeMessage('message_sent')
+  handleMessageSent(
+    @MessageBody() data: { roomId: number },
+  ) {
+    this.server.to(`room-${data.roomId}`).emit('message_sent');
+  }
+
   @SubscribeMessage('vote')
 async handleVote(
   @MessageBody()

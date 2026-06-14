@@ -9,6 +9,7 @@ import { Game } from './entities/game.entity';
 import { Player } from 'src/players/entities/player.entity';
 import { Vote } from 'src/votes/entities/vote.entity';
 import { Room } from 'src/rooms/entities/room.entity';
+import { Word } from 'src/words/entities/word.entity';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { Room } from 'src/rooms/entities/room.entity';
       Player,
       Vote,
       Room,
+      Word,
     ]),
   ],
   controllers: [GamesController],
