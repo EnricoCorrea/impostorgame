@@ -9,8 +9,14 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
-  app.enableCors({ origin: configService.get('CORS_ORIGIN', '*') });
-  app.useGlobalFilters(new AllExceptionsFilter());
+app.enableCors({
+  origin: 'http://localhost:3000',
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  allowedHeaders: 'Content-Type, Authorization',
+  credentials: true,
+});
+
+app.useGlobalFilters(new AllExceptionsFilter());
 
   const config = new DocumentBuilder()
     .setTitle('Impostor Game API')
