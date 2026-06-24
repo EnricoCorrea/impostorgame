@@ -21,24 +21,31 @@ import { RoomUser } from './room-user.entity';
 })
 export class Room extends Model {
   @Column
-  name!: string;
+  declare name: string;
 
   @ForeignKey(() => User)
   @Column({ field: 'host_id', allowNull: false })
-  hostId!: number;
+  declare hostId: number;
 
-  @Column({ type: DataType.ENUM('WAITING','PLAYING','CLOSED'), allowNull: false })
-  status!: string;
+  @BelongsTo(() => User, 'hostId')
+  declare host: User;
+
+  @Column({
+    type: DataType.ENUM('WAITING', 'PLAYING', 'CLOSED'),
+    allowNull: false,
+    defaultValue: 'WAITING',
+  })
+  declare status: string;
 
   @Column({ field: 'max_users', allowNull: false })
-  maxUsers!: number;
+  declare maxUsers: number;
 
-  @Column({ field: 'closed_at' })
-  closedAt!: Date;
+  @Column({ field: 'closed_at', type: DataType.DATE, allowNull: true })
+  declare closedAt: Date | null;
 
   @HasMany(() => Game)
-  games!: Game[];
+  declare games: Game[];
 
   @BelongsToMany(() => User, () => RoomUser)
-  users!: User[];
+  declare users: User[];
 }

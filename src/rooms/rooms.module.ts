@@ -13,14 +13,6 @@ import { Player } from '../players/entities/player.entity';
 @Module({
   controllers: [RoomsController],
   providers: [RoomsService],
-  imports: [
-    SequelizeModule.forFeature([
-      Room,
-      User,
-      RoomUser,
-      Game,
-      Player,
-    ]),
-  ],
+  imports: [SequelizeModule.forFeature([Room, User, RoomUser, Game, Player])],
 })
 export class RoomsModule {}
