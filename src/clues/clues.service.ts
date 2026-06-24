@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateClueDto } from './dto/create-clue.dto';
 import { UpdateClueDto } from './dto/update-clue.dto';
 import { InjectModel } from '@nestjs/sequelize';
@@ -21,8 +25,7 @@ export class CluesService {
     private gameModel: typeof Game,
     @InjectModel(Player)
     private playerModel: typeof Player,
-  ) { }
-
+  ) {}
 
   async create(data: any) {
     const game = await this.gameModel.findByPk(data.gameId);
@@ -36,7 +39,9 @@ export class CluesService {
     }
 
     if (hasPhaseExpired(game.id)) {
-      throw new BadRequestException('Tempo para dica expirou; rodada ignorada.');
+      throw new BadRequestException(
+        'Tempo para dica expirou; rodada ignorada.',
+      );
     }
 
     const player = await this.playerModel.findByPk(data.playerId, {
@@ -48,9 +53,7 @@ export class CluesService {
     }
 
     if (!player.isAlive) {
-      throw new BadRequestException(
-        'Dead players cannot send clues',
-      );
+      throw new BadRequestException('Dead players cannot send clues');
     }
 
     // impede múltiplas dicas na mesma rodada
@@ -72,10 +75,7 @@ export class CluesService {
     if (
       player.role !== 'IMPOSTOR' &&
       player.word?.word &&
-      containsSecretWord(
-        data.clue,
-        player.word.word,
-      )
+      containsSecretWord(data.clue, player.word.word)
     ) {
       throw new BadRequestException(
         'Innocent players cannot use the secret word in clues',
@@ -88,10 +88,7 @@ export class CluesService {
     });
   }
 
-  async findAll(
-    pagination: PaginationDto,
-    filters: ClueFilterDto,
-  ) {
+  async findAll(pagination: PaginationDto, filters: ClueFilterDto) {
     const where = {
       ...(filters.clue && {
         clue: {
@@ -99,10 +96,10 @@ export class CluesService {
         },
       }),
       ...(filters.game_id && {
-        host_id: filters.game_id, // igualdade
+        gameId: filters.game_id,
       }),
     };
-  
+
     return paginate(this.clueModel, pagination, {
       where,
       distinct: true,
