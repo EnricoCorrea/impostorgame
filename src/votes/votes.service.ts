@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Vote } from './entities/vote.entity';
 import { CreateVoteDto } from './dto/create-vote.dto';
@@ -16,20 +20,19 @@ export class VotesService {
     private voteModel: typeof Vote,
     @InjectModel(Player)
     private playerModel: typeof Player,
-  ) { }
+  ) {}
 
   async create(createVoteDto: CreateVoteDto) {
     return this.voteModel.create(createVoteDto as any);
   }
 
-  async findAll(
-    pagination: PaginationDto,
-    filters: VoteFilterDto,
-  ) {
+  async findAll(pagination: PaginationDto, filters: VoteFilterDto) {
     const where = {
-      ...(filters.game_id && { game_id: filters.game_id }),
-      ...(filters.voter_id && { voter_id: filters.voter_id }),
-      ...(filters.target_player_id && { target_player_id: filters.target_player_id }),
+      ...(filters.game_id && { gameId: filters.game_id }),
+      ...(filters.voter_id && { voterId: filters.voter_id }),
+      ...(filters.target_player_id && {
+        targetPlayerId: filters.target_player_id,
+      }),
     };
 
     return paginate(this.voteModel, pagination, {
@@ -43,11 +46,7 @@ export class VotesService {
     });
   }
 
-  async findOne(
-    roundNumber: number,
-    gameId: number,
-    voterId: number,
-  ) {
+  async findOne(roundNumber: number, gameId: number, voterId: number) {
     const vote = await this.voteModel.findOne({
       where: {
         roundNumber,
@@ -66,7 +65,7 @@ export class VotesService {
           model: Player,
           as: 'target',
         },
-      ]
+      ],
     });
     if (!vote) {
       throw new NotFoundException('Vote not found');
@@ -87,11 +86,7 @@ export class VotesService {
     return vote;
   }
 
-  async remove(
-    roundNumber: number,
-    gameId: number,
-    voterId: number,
-  ) {
+  async remove(roundNumber: number, gameId: number, voterId: number) {
     const vote = await this.findOne(roundNumber, gameId, voterId);
 
     await vote.destroy();
@@ -100,6 +95,4 @@ export class VotesService {
       message: 'Vote removed successfully',
     };
   }
-
-
 }
