@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreatePlayerDto } from './dto/create-player.dto';
 import { UpdatePlayerDto } from './dto/update-player.dto';
 import { InjectModel } from '@nestjs/sequelize';
@@ -13,106 +17,99 @@ import { PlayerFilterDto } from './dto/players-filter.dto';
 
 @Injectable()
 export class PlayersService {
-constructor(
-  @InjectModel(Player)
-  private playerModel: typeof Player,
-) {}
+  constructor(
+    @InjectModel(Player)
+    private playerModel: typeof Player,
+  ) {}
 
-async create(createPlayerDto: CreatePlayerDto) {
-  const role = createPlayerDto.role
-    ? createPlayerDto.role
-    : createPlayerDto.isImpostor
-    ? PlayerRole.IMPOSTOR
-    : PlayerRole.INNOCENT;
+  async create(createPlayerDto: CreatePlayerDto) {
+    const role = createPlayerDto.role
+      ? createPlayerDto.role
+      : createPlayerDto.isImpostor
+        ? PlayerRole.IMPOSTOR
+        : PlayerRole.INNOCENT;
 
-  if (role === PlayerRole.IMPOSTOR) {
-    await this.ensureSingleImpostor(createPlayerDto.gameId);
+    if (role === PlayerRole.IMPOSTOR) {
+      await this.ensureSingleImpostor(createPlayerDto.gameId);
+    }
+
+    return this.playerModel.create({
+      ...createPlayerDto,
+      role,
+    });
   }
 
-  return this.playerModel.create({
-    ...createPlayerDto,
-    role,
-  });
-}
+  async findAll(pagination: PaginationDto, filters: PlayerFilterDto) {
+    const where = {
+      ...(filters.game_id && { gameId: filters.game_id }),
+      ...(filters.user_id && { userId: filters.user_id }),
+      ...(filters.word_id && { wordId: filters.word_id }),
+    };
 
-async findAll(
-  pagination: PaginationDto,
-  filters: PlayerFilterDto,
-) {
-  const where = {
-    ...(filters.game_id && { game_id: filters.game_id }),
-    ...(filters.user_id && { user_id: filters.user_id }),
-    ...(filters.word_id && { word_id: filters.word_id }),
-  };
-
-  return paginate(this.playerModel, pagination, {
-    where,
-    distinct: true,
-    include: [
-      { model: Game },
-      { model: User },
-      { model: Word },
-    ],
-  });
-}
-
-async findOne(id: number) {
-  const player = await this.playerModel.findByPk(id);
-
-  if (!player) {
-    throw new NotFoundException('Player not found');
+    return paginate(this.playerModel, pagination, {
+      where,
+      distinct: true,
+      include: [{ model: Game }, { model: User }, { model: Word }],
+    });
   }
 
-  return player;
-}
+  async findOne(id: number) {
+    const player = await this.playerModel.findByPk(id);
 
-async update(id: number, updatePlayerDto: UpdatePlayerDto) {
-  const player = await this.playerModel.findByPk(id);
+    if (!player) {
+      throw new NotFoundException('Player not found');
+    }
 
-  if (!player) {
-    throw new NotFoundException('Player not found');
+    return player;
   }
 
-  const gameId = updatePlayerDto.gameId ?? player.gameId;
-  const role = updatePlayerDto.role
-    ? updatePlayerDto.role
-    : updatePlayerDto.isImpostor
-    ? PlayerRole.IMPOSTOR
-    : player.role;
+  async update(id: number, updatePlayerDto: UpdatePlayerDto) {
+    const player = await this.playerModel.findByPk(id);
 
-  if (role === PlayerRole.IMPOSTOR) {
-    await this.ensureSingleImpostor(gameId, id);
+    if (!player) {
+      throw new NotFoundException('Player not found');
+    }
+
+    const gameId = updatePlayerDto.gameId ?? player.gameId;
+    const role = updatePlayerDto.role
+      ? updatePlayerDto.role
+      : updatePlayerDto.isImpostor
+        ? PlayerRole.IMPOSTOR
+        : player.role;
+
+    if (role === PlayerRole.IMPOSTOR) {
+      await this.ensureSingleImpostor(gameId, id);
+    }
+
+    await player.update({ ...updatePlayerDto, role, gameId });
+
+    return player;
   }
 
-  await player.update({ ...updatePlayerDto, role, gameId });
+  async remove(id: number) {
+    const player = await this.playerModel.findByPk(id, {
+      include: [Game, User, Word],
+    });
 
-  return player;
-}
+    if (!player) {
+      throw new NotFoundException('Player not found');
+    }
 
-async remove(id: number) {
-  const player = await this.playerModel.findByPk(id, {
-    include: [Game, User, Word]
-  });
+    await player.destroy();
 
-  if (!player) {
-    throw new NotFoundException('Player not found');
+    return player;
   }
 
-  await player.destroy();
+  private async ensureSingleImpostor(gameId: number, currentPlayerId?: number) {
+    const existingImpostor = await this.playerModel.findOne({
+      where: {
+        gameId,
+        role: PlayerRole.IMPOSTOR,
+      },
+    });
 
-  return player;
-}
-
-private async ensureSingleImpostor(gameId: number, currentPlayerId?: number) {
-  const existingImpostor = await this.playerModel.findOne({
-    where: {
-      gameId,
-      role: PlayerRole.IMPOSTOR,
-    },
-  });
-
-  if (existingImpostor && existingImpostor.id !== currentPlayerId) {
-    throw new BadRequestException('Já existe um impostor neste jogo.');
+    if (existingImpostor && existingImpostor.id !== currentPlayerId) {
+      throw new BadRequestException('Já existe um impostor neste jogo.');
+    }
   }
-}
 }
