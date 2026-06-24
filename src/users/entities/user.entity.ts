@@ -1,9 +1,8 @@
 import { Column, Model, Table } from 'sequelize-typescript';
 import { HasMany, BelongsToMany } from 'sequelize-typescript';
 import { Room } from 'src/rooms/entities/room.entity';
-import { Player } from 'src/players/entities/player.entity'
+import { Player } from 'src/players/entities/player.entity';
 import { RoomUser } from 'src/rooms/entities/room-user.entity';
-
 
 @Table({
   tableName: 'users',
@@ -20,13 +19,13 @@ export class User extends Model {
 
   @Column
   declare password: string;
-  
+
   @Column({
-    defaultValue: 'PLAYER'
+    defaultValue: 'PLAYER',
   })
   declare role: string;
 
-  @BelongsToMany(() => Room, () => RoomUser, 'user_id', 'room_id')
+  @BelongsToMany(() => Room, () => RoomUser)
   declare rooms: Room[];
 
   @HasMany(() => Player)
