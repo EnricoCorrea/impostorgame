@@ -4,13 +4,20 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy/jwt.strategy';
 import { AuthController } from './auth.controller';
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
     UsersModule,
-    JwtModule.register({
-      secret: 'segredo_cefetiano', // COISA IMPORTANTE AMIGOS N PODE ESQUECER DE TROCAR PRA USAR .ENV DPS!!!
-      signOptions: { expiresIn: '1d' },
+    ConfigModule,
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.getOrThrow<string>('JWT_SECRET'),
+        signOptions: {
+          expiresIn: config.get<string>('JWT_EXPIRES_IN', '1d') as any,
+        },
+      }),
     }),
   ],
   providers: [AuthService, JwtStrategy],
