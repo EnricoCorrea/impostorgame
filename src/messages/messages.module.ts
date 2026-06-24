@@ -9,7 +9,6 @@ import { SequelizeModule } from '@nestjs/sequelize';
 @Module({
   controllers: [MessagesController],
   providers: [MessagesService],
-  imports: [SequelizeModule.forFeature([Message,Game, Player])],
-  
+  imports: [SequelizeModule.forFeature([Message, Game, Player])],
 })
 export class MessagesModule {}

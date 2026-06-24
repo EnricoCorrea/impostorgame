@@ -23,22 +23,16 @@ export class MessagesService {
     });
   }
 
-  async findAll(
-    pagination: PaginationDto,
-    filters: MessageFilterDto,
-  ) {
+  async findAll(pagination: PaginationDto, filters: MessageFilterDto) {
     const where = {
-      ...(filters.game_id && { game_id: filters.game_id }),
-      ...(filters.player_id && { player_id: filters.player_id }),
+      ...(filters.game_id && { gameId: filters.game_id }),
+      ...(filters.player_id && { playerId: filters.player_id }),
     };
-  
+
     return paginate(this.messageModel, pagination, {
       where,
       distinct: true,
-      include: [
-        { model: Game },
-        { model: Player },
-      ],
+      include: [{ model: Game }, { model: Player }],
     });
   }
 
@@ -57,20 +51,20 @@ export class MessagesService {
   async update(id: number, data: any) {
     const message = await this.messageModel.findByPk(id);
 
-      if (!message) {
-        throw new NotFoundException('Message not found');
-      }
+    if (!message) {
+      throw new NotFoundException('Message not found');
+    }
 
-      await message.update(data);
+    await message.update(data);
 
-      return message;
+    return message;
   }
 
   async remove(id: number) {
     const message = await this.messageModel.findByPk(id);
 
     if (!message) {
-    throw new NotFoundException('Message not found');
+      throw new NotFoundException('Message not found');
     }
 
     await message.destroy();
