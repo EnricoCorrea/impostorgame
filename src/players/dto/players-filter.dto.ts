@@ -1,7 +1,7 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
 import { IsOptional, IsInt } from 'class-validator';
 import { Type } from 'class-transformer';
-
+import { PaginationDto } from '../../common/enums/dto/pagination.dto';
 
 export class PlayerFilterDto {
   @ApiPropertyOptional()
@@ -22,3 +22,8 @@ export class PlayerFilterDto {
   @IsInt()
   word_id?: number;
 }
+
+export class PlayerListQueryDto extends IntersectionType(
+  PaginationDto,
+  PlayerFilterDto,
+) {}

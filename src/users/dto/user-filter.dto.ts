@@ -1,5 +1,6 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
+import { PaginationDto } from '../../common/enums/dto/pagination.dto';
 
 export class UserFilterDto {
   @ApiPropertyOptional()
@@ -12,3 +13,8 @@ export class UserFilterDto {
   @IsString()
   email?: string;
 }
+
+export class UserListQueryDto extends IntersectionType(
+  PaginationDto,
+  UserFilterDto,
+) {}

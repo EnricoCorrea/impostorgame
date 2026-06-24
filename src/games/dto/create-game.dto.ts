@@ -19,6 +19,4 @@ export class CreateGameDto {
     description: 'Status atual do jogo',
   })
   declare status: GameStatus;
-
-
 }
