@@ -1,24 +1,25 @@
 import {
-    Table,
-    Column,
-    Model,
-    ForeignKey,
-    BelongsTo,
-} from 'sequelize-typescript'
+  Table,
+  Column,
+  Model,
+  ForeignKey,
+  BelongsTo,
+  PrimaryKey,
+} from 'sequelize-typescript';
 import { Game } from 'src/games/entities/game.entity';
 import { Word } from './word.entity';
 
 @Table({
-    tableName: 'words',
-    timestamps: false,
+  tableName: 'game_words',
+  timestamps: false,
 })
-
 export class GameWord extends Model {
-    @ForeignKey(() => Game)
-    @Column({ field: 'game_id'})
-    gameId: number;
+  @ForeignKey(() => Game)
+  @PrimaryKey
+  @Column({ field: 'game_id' })
+  declare gameId: number;
 
-    @ForeignKey(() => Word)
-    @Column({ field: 'word_id'})
-    wordId: number;
+  @ForeignKey(() => Word)
+  @Column({ field: 'word_id' })
+  declare wordId: number;
 }

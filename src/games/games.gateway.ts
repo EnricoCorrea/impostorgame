@@ -17,48 +17,38 @@ export class GamesGateway {
 
   constructor(private gamesService: GamesService) {}
 
- @SubscribeMessage('join_room')
-handleJoin(
-  @ConnectedSocket() client: Socket,
-  @MessageBody() data: { roomId: number },
-) {
-  console.log('JOIN ROOM:', data);
-  client.join(`room-${data.roomId}`);
-}
+  @SubscribeMessage('join_room')
+  handleJoin(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { roomId: number },
+  ) {
+    console.log('JOIN ROOM:', data);
+    client.join(`room-${data.roomId}`);
+  }
 
   @SubscribeMessage('start_game')
-async handleStart(
-  @MessageBody() data: { gameId: number; roomId: number },
-) {
-  console.log('START GAME:', data);
+  async handleStart(@MessageBody() data: { gameId: number; roomId: number }) {
+    console.log('START GAME:', data);
 
-  const game = await this.gamesService.startGame(data.gameId);
+    const game = await this.gamesService.startGame(data.gameId);
 
-  this.server
-    .to(`room-${data.roomId}`)
-    .emit('game_updated', game);
-}
+    this.server.to(`room-${data.roomId}`).emit('game_updated', game);
+  }
 
   @SubscribeMessage('vote')
-async handleVote(
-  @MessageBody()
-  data: {
-    gameId: number;
-    userId: number;
-    targetId: number;
-    roomId: number;
-  },
-) {
-  console.log('VOTE:', data);
+  async handleVote(
+    @MessageBody()
+    data: {
+      gameId: number;
+      userId: number;
+      targetId: number;
+      roomId: number;
+    },
+  ) {
+    console.log('VOTE:', data);
 
-  await this.gamesService.vote(
-    data.gameId,
-    data.userId,
-    data.targetId,
-  );
+    await this.gamesService.vote(data.gameId, data.userId, data.targetId);
 
-  this.server
-    .to(`room-${data.roomId}`)
-    .emit('game_updated', { ok: true });
-}
+    this.server.to(`room-${data.roomId}`).emit('game_updated', { ok: true });
+  }
 }

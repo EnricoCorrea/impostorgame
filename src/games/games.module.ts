@@ -9,15 +9,12 @@ import { Game } from './entities/game.entity';
 import { Player } from 'src/players/entities/player.entity';
 import { Vote } from 'src/votes/entities/vote.entity';
 import { Room } from 'src/rooms/entities/room.entity';
+import { Word } from 'src/words/entities/word.entity';
+import { GameWord } from 'src/words/entities/game-word.entity';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([
-      Game,
-      Player,
-      Vote,
-      Room,
-    ]),
+    SequelizeModule.forFeature([Game, Player, Vote, Room, Word, GameWord]),
   ],
   controllers: [GamesController],
   providers: [GamesService, GamesGateway],

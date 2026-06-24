@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -18,6 +19,8 @@ import {
   setPhaseExpiration,
 } from '../common/enums/utils/phase-timeout-store';
 import { GameFilterDto } from './dto/games-filter.dto';
+import { Word } from '../words/entities/word.entity';
+import { GameWord } from '../words/entities/game-word.entity';
 
 @Injectable()
 export class GamesService {
@@ -33,23 +36,24 @@ export class GamesService {
 
     @InjectModel(Room)
     private roomModel: typeof Room,
-  ) { }
 
-  async findAll(
-    pagination: PaginationDto,
-    filters: GameFilterDto,
-  ) {
+    @InjectModel(Word)
+    private wordModel: typeof Word,
+
+    @InjectModel(GameWord)
+    private gameWordModel: typeof GameWord,
+  ) {}
+
+  async findAll(pagination: PaginationDto, filters: GameFilterDto) {
     const where = {
-      ...(filters.room_id && { room_id: filters.room_id }),
-      ...(filters.round_number && { round_number: filters.round_number }),
+      ...(filters.room_id && { roomId: filters.room_id }),
+      ...(filters.round_number && { roundNumber: filters.round_number }),
     };
-  
+
     return paginate(this.gameModel, pagination, {
       where,
       distinct: true,
-      include: [
-        { model: Room },
-      ],
+      include: [{ model: Room }],
     });
   }
 
@@ -83,7 +87,7 @@ export class GamesService {
     return game;
   }
 
-  async createGame(roomId: number) {
+  async createGame(roomId: number, requestingUserId?: number) {
     const activeGame = await this.gameModel.findOne({
       where: {
         roomId,
@@ -92,9 +96,7 @@ export class GamesService {
     });
 
     if (activeGame) {
-      throw new BadRequestException(
-        'Game already in progress in this room',
-      );
+      throw new BadRequestException('Game already in progress in this room');
     }
 
     const room = await this.roomModel.findByPk(roomId, {
@@ -103,11 +105,23 @@ export class GamesService {
 
     if (!room) throw new NotFoundException('Room not found');
 
+    if (requestingUserId != null && room.hostId !== requestingUserId) {
+      throw new ForbiddenException('Somente o anfitrião pode criar o jogo');
+    }
+
     if (room.users.length < 3) {
       throw new BadRequestException(
         'A sala precisa ter pelo menos 3 usuários para iniciar um jogo',
       );
     }
+
+    const words = await this.wordModel.findAll();
+    if (words.length === 0) {
+      throw new BadRequestException(
+        'Cadastre ao menos uma palavra antes de criar o jogo',
+      );
+    }
+    const selectedWord = words[Math.floor(Math.random() * words.length)];
 
     const game = await this.gameModel.create({
       roomId,
@@ -115,10 +129,17 @@ export class GamesService {
       roundNumber: 0,
     });
 
+    await this.gameWordModel.create({
+      gameId: game.id,
+      wordId: selectedWord.id,
+    });
+
     for (const user of room.users) {
       await this.playerModel.create({
         gameId: game.id,
         userId: user.id,
+        wordId: selectedWord.id,
+        role: 'INNOCENT',
         isAlive: true,
       });
     }
@@ -126,12 +147,16 @@ export class GamesService {
     return game;
   }
 
-  async startGame(gameId: number) {
+  async startGame(gameId: number, requestingUserId?: number) {
     const game = await this.gameModel.findByPk(gameId, {
-      include: [Player],
+      include: [Player, Room],
     });
 
     if (!game) throw new NotFoundException('Game not found');
+
+    if (requestingUserId != null && game.room.hostId !== requestingUserId) {
+      throw new ForbiddenException('Somente o anfitrião pode iniciar o jogo');
+    }
 
     if (game.finishedAt) {
       throw new BadRequestException('Game already finished');
@@ -153,6 +178,10 @@ export class GamesService {
     game.roundNumber = 1;
 
     await game.save();
+    await this.roomModel.update(
+      { status: 'PLAYING' },
+      { where: { id: game.roomId } },
+    );
     this.schedulePhaseTimeout(game);
 
     return game;
@@ -196,7 +225,9 @@ export class GamesService {
     if (!game) throw new NotFoundException('Game not found');
 
     if (hasPhaseExpired(gameId)) {
-      throw new BadRequestException('Tempo de votação expirou; rodada ignorada.');
+      throw new BadRequestException(
+        'Tempo de votação expirou; rodada ignorada.',
+      );
     }
 
     if (game.status !== 'VOTING') {
@@ -226,7 +257,7 @@ export class GamesService {
     }
 
     const existingVote = await this.voteModel.findOne({
-      where: { gameId, voterId },
+      where: { gameId, voterId: player.id, roundNumber: game.roundNumber },
     });
 
     if (existingVote) {
@@ -235,8 +266,9 @@ export class GamesService {
 
     await this.voteModel.create({
       gameId,
-      voterId,
+      voterId: player.id,
       targetPlayerId: targetId,
+      roundNumber: game.roundNumber,
     });
 
     return this.checkAllVoted(gameId);
@@ -296,7 +328,11 @@ export class GamesService {
 
     if (!game) throw new NotFoundException('Game not found');
 
-    const me = game.players.find(p => p.userId === userId);
+    const me = game.players.find((p) => p.userId === userId);
+
+    if (!me) {
+      throw new ForbiddenException('Usuário não participa deste jogo');
+    }
 
     return {
       status: game.status,
@@ -304,7 +340,7 @@ export class GamesService {
       finishedAt: game.finishedAt,
       winner: game.finishedAt ? game.winner : null,
 
-      players: game.players.map(p => ({
+      players: game.players.map((p) => ({
         id: p.id,
         userId: p.userId,
         isAlive: p.isAlive,
@@ -326,8 +362,12 @@ export class GamesService {
     const count: Record<number, number> = {};
 
     for (const vote of votes) {
-      count[vote.targetPlayerId] =
-        (count[vote.targetPlayerId] || 0) + 1;
+      if (vote.targetPlayerId == null) continue;
+      count[vote.targetPlayerId] = (count[vote.targetPlayerId] || 0) + 1;
+    }
+
+    if (Object.keys(count).length === 0) {
+      return this.checkWin(gameId);
     }
 
     const maxVotes = Math.max(...Object.values(count));
@@ -381,13 +421,9 @@ export class GamesService {
 
     const alive = players.filter((p) => p.isAlive);
 
-    const impostors = alive.filter(
-      (p) => p.role === 'IMPOSTOR',
-    ).length;
+    const impostors = alive.filter((p) => p.role === 'IMPOSTOR').length;
 
-    const innocents = alive.filter(
-      (p) => p.role === 'INNOCENT',
-    ).length;
+    const innocents = alive.filter((p) => p.role === 'INNOCENT').length;
 
     if (impostors === 0) {
       return this.finishGame(gameId, 'INNOCENT');
@@ -405,6 +441,10 @@ export class GamesService {
 
     this.nextPhase(game);
     await game.save();
+    await this.roomModel.update(
+      { status: 'WAITING' },
+      { where: { id: game.roomId } },
+    );
 
     return game;
   }

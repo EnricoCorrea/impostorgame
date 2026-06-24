@@ -1,116 +1,92 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
-  UseGuards,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
   Req,
-  ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
-
 import {
-  ApiTags,
-  ApiOperation,
+  ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiOkResponse,
-  ApiBadRequestResponse,
-  ApiParam,
-  ApiBearerAuth,
+  ApiOperation,
+  ApiTags,
 } from '@nestjs/swagger';
-import { JwtAuthGuard } from 'src/auth/jwt/jwt.guard';
+import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
+import {
+  GameIdParamDto,
+  RoomIdParamDto,
+  VoteGameDto,
+} from './dto/game-action.dto';
+import { GameListQueryDto } from './dto/games-filter.dto';
+import { UpdateGameDto } from './dto/update-game.dto';
 import { GamesService } from './games.service';
-import { Query } from '@nestjs/common';
-import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
-import { GameFilterDto } from './dto/games-filter.dto';
 
 @ApiTags('Games')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('games')
 export class GamesController {
   constructor(private readonly gamesService: GamesService) {}
 
   @Post('room/:roomId')
-  @ApiOperation({ summary: 'Criar um novo jogo em uma sala' })
-  @ApiParam({ name: 'roomId', description: 'ID da sala' })
-  @ApiCreatedResponse({ description: 'Jogo criado com sucesso' })
-  @ApiBadRequestResponse({ description: 'Já existe jogo ativo na sala' })
-  @UseGuards(JwtAuthGuard)
-  createGame(@Param('roomId', ParseIntPipe) roomId: number) {
-    return this.gamesService.createGame(roomId);
+  @ApiOperation({ summary: 'Criar jogo na sala (somente anfitrião)' })
+  @ApiCreatedResponse({
+    description: 'Jogo e jogadores criados com uma palavra sorteada',
+  })
+  @ApiBadRequestResponse({
+    description: 'Sala sem jogadores/palavras suficientes ou jogo já ativo',
+  })
+  createGame(@Param() params: RoomIdParamDto, @Req() req) {
+    return this.gamesService.createGame(params.roomId, req.user.id);
   }
 
   @Post(':id/start')
-  @ApiOperation({ summary: 'Iniciar um jogo' })
-  @ApiParam({ name: 'id', description: 'ID do jogo' })
-  @ApiOkResponse({ description: 'Jogo iniciado com sucesso' })
-  @UseGuards(JwtAuthGuard)
-  startGame(@Param('id', ParseIntPipe) id: number) {
-    return this.gamesService.startGame(id);
+  @ApiOperation({
+    summary: 'Iniciar jogo (somente anfitrião e mínimo de 3 jogadores)',
+  })
+  startGame(@Param() params: GameIdParamDto, @Req() req) {
+    return this.gamesService.startGame(params.id, req.user.id);
   }
 
   @Post(':id/vote')
-  @ApiOperation({ summary: 'Registrar voto no jogo' })
-  @ApiParam({ name: 'id', description: 'ID do jogo' })
-  @ApiOkResponse({ description: 'Voto registrado' })
-  @UseGuards(JwtAuthGuard)
-  vote(
-    @Param('id', ParseIntPipe) id: number,
-    @Req() req,
-    @Body() body: { targetId: number },
-  ) {
-    return this.gamesService.vote(id, req.user.id, body.targetId);
+  @ApiOperation({ summary: 'Registrar voto do usuário autenticado' })
+  vote(@Param() params: GameIdParamDto, @Req() req, @Body() dto: VoteGameDto) {
+    return this.gamesService.vote(params.id, req.user.id, dto.targetId);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar todos os jogos' })
-  @ApiOkResponse({ description: 'Lista de jogos retornada' })
-  @UseGuards(JwtAuthGuard)
-  findAll(
-    @Query() pagination: PaginationDto,
-    @Query() filters: GameFilterDto
-  ) {
-    return this.gamesService.findAll(pagination, filters);
+  @ApiOperation({ summary: 'Listar jogos' })
+  findAll(@Query() query: GameListQueryDto) {
+    return this.gamesService.findAll(query, query);
+  }
+
+  @Get(':id/state')
+  @ApiOperation({ summary: 'Obter estado do jogo sem revelar papéis alheios' })
+  getState(@Param() params: GameIdParamDto, @Req() req) {
+    return this.gamesService.getGameState(params.id, req.user.id);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Buscar jogo por ID' })
-  @ApiParam({ name: 'id', description: 'ID do jogo' })
-  @ApiOkResponse({ description: 'Jogo encontrado' })
-  @UseGuards(JwtAuthGuard)
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.gamesService.findOne(id);
-  }
-
-  @Get(':id/state')
-  @ApiOperation({ summary: 'Obter estado do jogo para o usuário' })
-  @ApiParam({ name: 'id', description: 'ID do jogo' })
-  @ApiOkResponse({ description: 'Estado do jogo retornado' })
-  @UseGuards(JwtAuthGuard)
-  getState(@Param('id', ParseIntPipe) id: number, @Req() req) {
-    return this.gamesService.getGameState(id, req.user.id);
+  findOne(@Param() params: GameIdParamDto) {
+    return this.gamesService.findOne(params.id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Atualizar jogo' })
-  @ApiParam({ name: 'id', description: 'ID do jogo' })
-  @ApiOkResponse({ description: 'Jogo atualizado com sucesso' })
-  @UseGuards(JwtAuthGuard)
-  update(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() updateGameDto: any,
-  ) {
-    return this.gamesService.update(id, updateGameDto);
+  @ApiOkResponse({ description: 'Jogo atualizado' })
+  update(@Param() params: GameIdParamDto, @Body() dto: UpdateGameDto) {
+    return this.gamesService.update(params.id, dto);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Remover jogo' })
-  @ApiParam({ name: 'id', description: 'ID do jogo' })
-  @ApiOkResponse({ description: 'Jogo removido com sucesso' })
-  @UseGuards(JwtAuthGuard)
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.gamesService.remove(id);
+  remove(@Param() params: GameIdParamDto) {
+    return this.gamesService.remove(params.id);
   }
 }
