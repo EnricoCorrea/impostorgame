@@ -24,9 +24,8 @@ import { UpdateWordDto } from './dto/update-word.dto';
 import { WordsService } from './words.service';
 import { CreateWordDto } from './dto/create-word.dto';
 import { Query } from '@nestjs/common';
-import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 import { Roles } from 'src/auth/decorator/roles.decorator';
-import { WordFilterDto } from './dto/words-filter.dto';
+import { WordListQueryDto } from './dto/words-filter.dto';
 
 @ApiTags('Words')
 @ApiBearerAuth()
@@ -47,11 +46,8 @@ export class WordsController {
   @ApiOperation({ summary: 'Listar todas as palavras' })
   @ApiOkResponse({ description: 'Lista de palavras retornada' })
   @UseGuards(JwtAuthGuard)
-  findAll(
-    @Query() pagination: PaginationDto,
-    @Query() filters: WordFilterDto
-  ) {
-    return this.wordsService.findAll(pagination, filters);
+  findAll(@Query() query: WordListQueryDto) {
+    return this.wordsService.findAll(query, query);
   }
 
   @Get(':id')
@@ -62,7 +58,6 @@ export class WordsController {
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.wordsService.findOne(id);
   }
-
 
   @Patch(':id')
   @ApiOperation({ summary: 'Atualizar palavra' })

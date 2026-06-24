@@ -13,7 +13,7 @@ export class WordsService {
   constructor(
     @InjectModel(Word)
     private wordModel: typeof Word,
-  ) { }
+  ) {}
 
   async create(createWordDto: CreateWordDto) {
     return this.wordModel.create({ ...createWordDto });
