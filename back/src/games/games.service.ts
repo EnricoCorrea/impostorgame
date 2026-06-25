@@ -100,18 +100,18 @@ export class GamesService {
     }
 
     const room = await this.roomModel.findByPk(roomId, {
-      include: [User],
+      include: [{ model: User, as: 'users' }],
     });
 
     if (!room) throw new NotFoundException('Room not found');
 
     if (requestingUserId != null && room.hostId !== requestingUserId) {
-      throw new ForbiddenException('Somente o anfitrião pode criar o jogo');
+      throw new ForbiddenException('Somente o anfitri\u00e3o pode criar o jogo');
     }
 
     if (room.users.length < 3) {
       throw new BadRequestException(
-        'A sala precisa ter pelo menos 3 usuários para iniciar um jogo',
+        'A sala precisa ter pelo menos 3 usu\u00e1rios para iniciar um jogo',
       );
     }
 
@@ -155,7 +155,7 @@ export class GamesService {
     if (!game) throw new NotFoundException('Game not found');
 
     if (requestingUserId != null && game.room.hostId !== requestingUserId) {
-      throw new ForbiddenException('Somente o anfitrião pode iniciar o jogo');
+      throw new ForbiddenException('Somente o anfitri\u00e3o pode iniciar o jogo');
     }
 
     if (game.finishedAt) {
@@ -226,7 +226,7 @@ export class GamesService {
 
     if (hasPhaseExpired(gameId)) {
       throw new BadRequestException(
-        'Tempo de votação expirou; rodada ignorada.',
+        'Tempo de vota\u00e7\u00e3o expirou; rodada ignorada.',
       );
     }
 
@@ -331,7 +331,7 @@ export class GamesService {
     const me = game.players.find((p) => p.userId === userId);
 
     if (!me) {
-      throw new ForbiddenException('Usuário não participa deste jogo');
+      throw new ForbiddenException('Usu\u00e1rio n\u00e3o participa deste jogo');
     }
 
     return {
@@ -376,7 +376,7 @@ export class GamesService {
       (id) => count[Number(id)] === maxVotes,
     );
 
-    // Se tiver empate ninguém sai
+    // Se tiver empate ningu\u00e9m sai
     if (tiedPlayers.length > 1) {
       await this.voteModel.destroy({
         where: { gameId },
