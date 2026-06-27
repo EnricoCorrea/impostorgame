@@ -15,6 +15,9 @@ export default function PlayHomePage() {
   const [name, setName] = useState("Sala dos suspeitos");
   const [maxUsers, setMaxUsers] = useState(5);
   const [roomCode, setRoomCode] = useState("");
+  const [searchName, setSearchName] = useState("");
+  const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
   const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -28,16 +31,17 @@ export default function PlayHomePage() {
     try {
       const [profile, roomPage] = await Promise.all([
         authService.me(),
-        roomsService.list({ page: 1, limit: 12 }),
+        roomsService.list({ name: searchName.trim() || undefined, page, limit: 6 }),
       ]);
       setMe(profile);
       setRooms(roomPage?.data ?? []);
+      setLastPage(roomPage?.meta.lastPage || 1);
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "Nao foi possivel carregar salas.");
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [page, router, searchName]);
 
   useEffect(() => {
     load();
@@ -70,7 +74,7 @@ export default function PlayHomePage() {
   }
 
   return (
-    <main className="player-page">
+    <main className="player-page play-home-page">
       <header className="player-topbar">
         <Link className="brand" href="/play"><span className="brand-mark">IG</span><span>Impostor<strong>Game</strong></span></Link>
         <div className="player-account">
@@ -82,8 +86,8 @@ export default function PlayHomePage() {
       <section className="player-hero">
         <div>
           <span className="eyebrow">Jogar com amigos</span>
-          <h1>Crie uma sala, envie o link e comece a suspeitar.</h1>
-          <p>O fluxo de jogador fica aqui: lobby, palavra secreta, dicas por rodada, discussao em chat e votacao.</p>
+          <h1>Salas de jogo</h1>
+          <p>Crie uma sala, entre por codigo ou encontre uma partida aberta.</p>
         </div>
         <form className="quick-join" onSubmit={joinRoom}>
           <label>Codigo da sala<input value={roomCode} onChange={(event) => setRoomCode(event.target.value.replace(/\D/g, ""))} placeholder="Ex.: 12" /></label>
@@ -94,7 +98,7 @@ export default function PlayHomePage() {
       {notice && <div className="notice" onClick={() => setNotice("")}>{notice}<span>x</span></div>}
 
       <section className="player-grid">
-        <form className="play-panel" onSubmit={createRoom}>
+        <form className="play-panel create-room-panel" onSubmit={createRoom}>
           <div>
             <span className="eyebrow">Nova sala</span>
             <h2>Preparar partida</h2>
@@ -109,6 +113,11 @@ export default function PlayHomePage() {
             <div><span className="eyebrow">Salas abertas</span><h2>Entrar rapido</h2></div>
             <button className="text-button" onClick={load} disabled={loading}>Atualizar</button>
           </div>
+
+          <form className="room-search" onSubmit={(event) => { event.preventDefault(); setPage(1); load(); }}>
+            <input value={searchName} onChange={(event) => { setPage(1); setSearchName(event.target.value); }} placeholder="Buscar sala por nome" />
+          </form>
+
           <div className="room-list">
             {loading ? <p className="empty-state">Carregando salas...</p> : rooms.length === 0 ? <p className="empty-state">Nenhuma sala disponivel.</p> : rooms.map((room) => (
               <article className="room-row" key={room.id}>
@@ -116,6 +125,12 @@ export default function PlayHomePage() {
                 <Link className="button button-secondary" href={`/play/${room.id}`}>Abrir</Link>
               </article>
             ))}
+          </div>
+
+          <div className="room-pagination">
+            <ActionButton variant="ghost" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={loading || page <= 1}>Anterior</ActionButton>
+            <span>Pagina {page} de {lastPage}</span>
+            <ActionButton variant="ghost" onClick={() => setPage((current) => Math.min(lastPage, current + 1))} disabled={loading || page >= lastPage}>Proxima</ActionButton>
           </div>
         </section>
       </section>
