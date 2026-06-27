@@ -53,6 +53,39 @@ export interface Word {
   impostorClue: string;
 }
 
+export interface Vote {
+  gameId: number;
+  voterId: number;
+  targetPlayerId: number | null;
+  roundNumber: number;
+  createdAt?: string;
+  game?: Game;
+  voter?: PlayerState;
+  target?: PlayerState;
+}
+
+export interface VoteScore {
+  targetId: number;
+  votes: number;
+}
+
+export interface HealthStatus {
+  status: string;
+  uptime?: number;
+  timestamp?: string;
+}
+
+export interface LiveGameUpdate {
+  gameId?: number;
+  roomId?: number;
+  status?: GameStatus;
+  roundNumber?: number;
+  phaseEndsAt?: string;
+  winner?: "IMPOSTOR" | "INNOCENT" | null;
+  scores?: VoteScore[];
+  message?: string;
+}
+
 export interface Page<T> {
   data: T[];
   meta: { total: number; page: number; lastPage: number };
