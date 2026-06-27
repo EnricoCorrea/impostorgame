@@ -6,6 +6,7 @@ import { authService } from "@/services/auth.service";
 import { ActionButton } from "@/components/ui/action-button";
 import { Modal } from "@/components/ui/modal";
 import { UserForm } from "@/components/forms/user-form";
+import { BrandMark } from "@/components/layout/brand-mark";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,7 +36,7 @@ export default function LoginPage() {
     <main className="login-page">
       <section className="login-art">
         <div className="brand brand-light">
-          <span className="brand-mark">IG</span>
+          <BrandMark />
           <span>Impostor<strong>Game</strong></span>
         </div>
         <div className="art-copy">

@@ -7,6 +7,7 @@ import { ApiError } from "@/data/http-client";
 import { authService } from "@/services/auth.service";
 import type { User } from "@/types/api";
 import { ActionButton } from "@/components/ui/action-button";
+import { BrandMark } from "@/components/layout/brand-mark";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter(); const pathname = usePathname();
@@ -51,5 +52,5 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     { href: "/votes", label: "Votos" },
     { href: "/live", label: "Ao vivo" },
   ];
-  return <div className="app-layout"><aside className="sidebar"><Link href="/dashboard" className="brand"><span className="brand-mark">IG</span><span>Impostor<strong>Game</strong></span></Link><nav>{links.map((link) => <Link className={pathname === link.href ? "active" : ""} key={link.href} href={link.href}>{link.label}</Link>)}</nav><div className="sidebar-user"><span className="avatar">{initials}</span><div><strong>{displayName}</strong><small>{user.role}</small></div><ActionButton variant="ghost" onClick={logout} title="Sair">Sair</ActionButton></div></aside><main className="content">{children}</main></div>;
+  return <div className="app-layout"><aside className="sidebar"><Link href="/dashboard" className="brand"><BrandMark /><span>Impostor<strong>Game</strong></span></Link><nav>{links.map((link) => <Link className={pathname === link.href ? "active" : ""} key={link.href} href={link.href}>{link.label}</Link>)}</nav><div className="sidebar-user"><span className="avatar">{initials}</span><div><strong>{displayName}</strong><small>{user.role}</small></div><ActionButton variant="ghost" onClick={logout} title="Sair">Sair</ActionButton></div></aside><main className="content">{children}</main></div>;
 }
