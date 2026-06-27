@@ -1,0 +1,81 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: impostor-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: impostor_game
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d impostor_game"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  back:
+    build:
+      context: ./back
+    container_name: impostor-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3001
+      CORS_ORIGIN: http://localhost:3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: impostor_game
+      DB_SYNC: "true"
+      JWT_SECRET: troque-por-uma-chave-longa-e-aleatoria
+      JWT_EXPIRES_IN: 1d
+    ports:
+      - "3001:3001"
+
+  seed:
+    image: postgres:16-alpine
+    container_name: impostor-seed
+    depends_on:
+      db:
+        condition: service_healthy
+      back:
+        condition: service_started
+    environment:
+      PGPASSWORD: postgres
+    volumes:
+      - ./back/banco_scripts/seed.sql:/seed.sql:ro
+    command: >
+      sh -c "until psql -h db -U postgres -d impostor_game -tAc \"SELECT to_regclass('public.users')\" | grep -q users; do
+        echo 'Aguardando tabelas do backend...';
+        sleep 2;
+      done;
+      psql -v ON_ERROR_STOP=1 -h db -U postgres -d impostor_game -f /seed.sql"
+    restart: "no"
+
+  front:
+    build:
+      context: ./front
+      args:
+        API_PROXY_URL: http://back:3001
+        NEXT_PUBLIC_API_URL: ""
+        NEXT_PUBLIC_SOCKET_URL: http://localhost:3001
+    container_name: impostor-front
+    restart: unless-stopped
+    depends_on:
+      - back
+    environment:
+      API_PROXY_URL: http://back:3001
+      NEXT_PUBLIC_API_URL: ""
+      NEXT_PUBLIC_SOCKET_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:

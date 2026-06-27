@@ -120,6 +120,44 @@ http://localhost:3000
 
 Observacao: `npm start` no Next.js usa o build ja gerado. Depois de alterar codigo, rode `npm run build` antes de iniciar com `npm start`.
 
+## Executando com Docker
+
+O projeto tambem pode subir com Docker Compose. A composicao cria:
+
+- `db`: PostgreSQL
+- `back`: API NestJS em `http://localhost:3001`
+- `front`: Next.js em `http://localhost:3000`
+
+Antes de rodar, deixe o Docker Desktop aberto e com o engine Linux ativo.
+
+Na raiz do projeto, rode:
+
+```bash
+docker compose up --build
+```
+
+Para rodar em segundo plano:
+
+```bash
+docker compose up --build -d
+```
+
+Para parar:
+
+```bash
+docker compose down
+```
+
+Para remover tambem o volume do banco:
+
+```bash
+docker compose down -v
+```
+
+No Docker Compose, o backend acessa o PostgreSQL usando `DB_HOST=db`. O frontend usa o proxy `/api` para chamadas HTTP e `NEXT_PUBLIC_SOCKET_URL=http://localhost:3001` para WebSocket.
+
+Por padrao, o `docker-compose.yml` usa `DB_SYNC=true` para facilitar o ambiente local criando/sincronizando as tabelas pelo Sequelize. Em producao, prefira `DB_SYNC=false` e migre o banco de forma controlada.
+
 ## Fluxo Basico do Jogo
 
 1. Criar usuario ou entrar com uma conta existente.
