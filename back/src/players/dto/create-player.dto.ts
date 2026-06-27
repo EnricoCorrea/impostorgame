@@ -1,43 +1,59 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { IsBoolean, IsEnum, IsInt, IsOptional, Min } from 'class-validator';
+import { PlayerRole } from 'src/common/enums/player-role';
 
 export class CreatePlayerDto {
   @ApiProperty({
     example: 1,
     description: 'ID do jogo',
   })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   declare gameId: number;
 
   @ApiProperty({
     example: 5,
-    description: 'ID do usuário',
+    description: 'ID do usuario',
   })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   declare userId: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 10,
     description: 'ID da palavra associada ao jogador',
-    required: false,
   })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
   declare wordId: number;
 
-  @ApiProperty({
-    example: 'INNOCENT',
+  @ApiPropertyOptional({
+    example: PlayerRole.INNOCENT,
     description: 'Papel do jogador no jogo',
-    required: false,
+    enum: PlayerRole,
   })
-  declare role: string;
+  @IsOptional()
+  @IsEnum(PlayerRole)
+  declare role: PlayerRole;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: false,
-    description: 'Indica se o jogador é impostor',
-    required: false,
+    description: 'Indica se o jogador e impostor',
   })
+  @IsOptional()
+  @IsBoolean()
   declare isImpostor: boolean;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: true,
-    description: 'Indica se o jogador está vivo',
-    required: false,
+    description: 'Indica se o jogador esta vivo',
   })
+  @IsOptional()
+  @IsBoolean()
   declare isAlive: boolean;
 }
