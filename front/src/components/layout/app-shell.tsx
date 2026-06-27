@@ -44,6 +44,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     ...(user.role === "ADMIN" ? [{ href: "/users", label: "Usu\u00e1rios" }] : []),
     { href: "/rooms", label: "Salas" },
     { href: "/games", label: "Partidas" },
+    { href: "/players", label: "Jogadores" },
     { href: "/words", label: "Palavras" },
     { href: "/votes", label: "Votos" },
     { href: "/live", label: "Ao vivo" },

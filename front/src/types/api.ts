@@ -38,6 +38,20 @@ export interface PlayerState {
   voteCount?: number;
 }
 
+export type PlayerRole = "IMPOSTOR" | "INNOCENT";
+
+export interface Player {
+  id: number;
+  gameId: number;
+  userId: number;
+  wordId: number;
+  role: PlayerRole;
+  isAlive: boolean;
+  game?: Game;
+  user?: User;
+  word?: Word;
+}
+
 export interface Game {
   id: number;
   roomId: number;
