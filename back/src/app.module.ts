@@ -22,18 +22,32 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     GamesModule,
     SequelizeModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        dialect: 'postgres',
-        host: config.get<string>('DB_HOST', 'localhost'),
-        port: config.get<number>('DB_PORT', 5432),
-        username: config.get<string>('DB_USER', 'postgres'),
-        password: config.get<string>('DB_PASSWORD', 'postgres'),
-        database: config.get<string>('DB_NAME', 'impostor_game'),
-        autoLoadModels: true,
-        synchronize: config.get<string>('DB_SYNC', 'false') === 'true',
-        define: { timestamps: false },
-        logging: console.log,
-      }),
+      useFactory: (config: ConfigService) => {
+        const useSsl = config.get<string>('DB_SSL', 'false') === 'true';
+
+        return {
+          dialect: 'postgres',
+          host: config.get<string>('DB_HOST', 'localhost'),
+          port: config.get<number>('DB_PORT', 5432),
+          username: config.get<string>('DB_USER', 'postgres'),
+          password: config.get<string>('DB_PASSWORD', 'postgres'),
+          database: config.get<string>('DB_NAME', 'impostor_game'),
+          autoLoadModels: true,
+          synchronize: config.get<string>('DB_SYNC', 'false') === 'true',
+          define: { timestamps: false },
+          logging: console.log,
+          ...(useSsl
+            ? {
+                dialectOptions: {
+                  ssl: {
+                    require: true,
+                    rejectUnauthorized: false,
+                  },
+                },
+              }
+            : {}),
+        };
+      },
     }),
     MessagesModule,
     VotesModule,
