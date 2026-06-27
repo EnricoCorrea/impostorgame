@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ApiError } from "@/data/http-client";
 import { authService } from "@/services/auth.service";
 import type { User } from "@/types/api";
 import { ActionButton } from "@/components/ui/action-button";
@@ -10,9 +11,32 @@ import { ActionButton } from "@/components/ui/action-button";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter(); const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
-  useEffect(() => { if (!authService.hasToken()) return router.replace("/login"); authService.me().then(setUser).catch(() => { authService.logout(); router.replace("/login"); }); }, [router]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    if (!authService.hasToken()) {
+      router.replace("/login");
+      return;
+    }
+
+    authService.me()
+      .then((currentUser) => { if (active) setUser(currentUser); })
+      .catch((err) => {
+        if (!active) return;
+        if (err instanceof ApiError && err.status === 401) {
+          authService.logout();
+          router.replace("/login");
+          return;
+        }
+        setError(err instanceof Error ? err.message : "Nao foi possivel validar sua sessao.");
+      });
+
+    return () => { active = false; };
+  }, [router]);
+
   function logout() { authService.logout(); router.replace("/login"); }
-  if (!user) return <main className="center-screen"><span className="spinner spinner-dark" /></main>;
+  if (!user) return <main className="center-screen">{error ? <p className="form-error">{error}</p> : <span className="spinner spinner-dark" />}</main>;
   const displayName = user.name?.trim() || user.email?.split("@")[0] || "Jogador";
   const initials = displayName.slice(0, 2).toUpperCase();
   const links = [

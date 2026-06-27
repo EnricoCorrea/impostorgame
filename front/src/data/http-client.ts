@@ -1,7 +1,10 @@
 import type { ApiErrorBody } from "@/types/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 const TOKEN_KEY = "impostor-game-token";
+
+function getApiUrl() {
+  return process.env.NEXT_PUBLIC_API_URL ?? "/api";
+}
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -15,9 +18,29 @@ export const tokenStore = {
   clear: () => localStorage.removeItem(TOKEN_KEY),
 };
 
+async function readErrorMessage(response: Response) {
+  const text = await response.text().catch(() => "");
+
+  if (response.status === 401) {
+    tokenStore.clear();
+    return "Sessao expirada. Entre novamente.";
+  }
+
+  if (!text) return "Nao foi possivel concluir a operacao";
+
+  try {
+    const body = JSON.parse(text) as ApiErrorBody;
+    return Array.isArray(body?.message)
+      ? body.message.join(". ")
+      : body?.message ?? text;
+  } catch {
+    return text.length > 180 ? text.slice(0, 180) : text;
+  }
+}
+
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = tokenStore.get();
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetch(`${getApiUrl()}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
@@ -27,15 +50,19 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   });
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as ApiErrorBody | null;
-    const message = Array.isArray(body?.message)
-      ? body.message.join(". ")
-      : body?.message ?? "Não foi possível concluir a operação";
-    throw new ApiError(response.status, message);
+    throw new ApiError(response.status, await readErrorMessage(response));
   }
 
   if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+
+  const text = await response.text();
+  if (!text) return undefined as T;
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return text as T;
+  }
 }
 
 export function queryString(values: Record<string, string | number | undefined>) {

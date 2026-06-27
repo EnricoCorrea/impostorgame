@@ -1,7 +1,12 @@
 import { io, type Socket } from "socket.io-client";
 import type { LiveGameUpdate } from "@/types/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+function getSocketUrl() {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window === "undefined") return "http://localhost:3001";
+  const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+  return `${protocol}//${window.location.hostname}:3001`;
+}
 
 export type LiveSocketStatus = "connecting" | "connected" | "disconnected" | "error";
 export type LiveSocketEvent = "game_updated" | "message";
@@ -20,7 +25,7 @@ export function createLiveGameSocket({
   onMessage: (message: LiveSocketMessage) => void;
 }) {
   onStatus("connecting");
-  const socket: Socket = io(API_URL, { transports: ["websocket"] });
+  const socket: Socket = io(getSocketUrl(), { transports: ["websocket"] });
 
   socket.on("connect", () => onStatus("connected"));
   socket.on("disconnect", () => onStatus("disconnected"));

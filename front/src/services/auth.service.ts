@@ -3,6 +3,7 @@ import type { User } from "@/types/api";
 
 export const authService = {
   async login(email: string, password: string) {
+    tokenStore.clear();
     const result = await apiRequest<{ access_token: string }>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email, password }),
