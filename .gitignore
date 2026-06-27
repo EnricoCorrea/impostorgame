@@ -1,4 +1,5 @@
 node_modules/
+dist/
 back/node_modules/
 back/dist/
 back/coverage/
@@ -6,5 +7,6 @@ back/.env
 front/node_modules/
 front/.next/
 front/out/
+front/.npm-cache/
 front/.env.local
 *.log
