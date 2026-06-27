@@ -21,6 +21,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     { href: "/rooms", label: "Salas" },
     { href: "/games", label: "Partidas" },
     { href: "/words", label: "Palavras" },
+    { href: "/votes", label: "Votos" },
+    { href: "/live", label: "Ao vivo" },
   ];
   return <div className="app-layout"><aside className="sidebar"><Link href="/dashboard" className="brand"><span className="brand-mark">IG</span><span>Impostor<strong>Game</strong></span></Link><nav>{links.map((link) => <Link className={pathname === link.href ? "active" : ""} key={link.href} href={link.href}>{link.label}</Link>)}</nav><div className="sidebar-user"><span className="avatar">{initials}</span><div><strong>{displayName}</strong><small>{user.role}</small></div><ActionButton variant="ghost" onClick={logout} title="Sair">Sair</ActionButton></div></aside><main className="content">{children}</main></div>;
 }
