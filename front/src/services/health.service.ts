@@ -1,10 +1,9 @@
 import type { HealthStatus } from "@/types/api";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+import { getApiBaseUrl } from "@/data/api-config";
 
 export const healthService = {
   async check(): Promise<HealthStatus> {
-    const response = await fetch(API_URL);
+    const response = await fetch(getApiBaseUrl());
     if (!response.ok) throw new Error("API indisponivel");
     return { status: "API conectada", timestamp: new Date().toISOString() };
   },
