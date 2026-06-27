@@ -226,10 +226,26 @@ export default function PlayRoomPage() {
     }
   }
 
-  async function copyInvite() {
-    await navigator.clipboard.writeText(inviteLink);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1600);
+async function copyInvite() {
+    try {
+      if (navigator.clipboard?.writeText && window.isSecureContext) {
+        await navigator.clipboard.writeText(inviteLink);
+      } else {
+        const input = document.createElement("textarea");
+        input.value = inviteLink;
+        input.setAttribute("readonly", "");
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        document.body.removeChild(input);
+      }
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Nao foi possivel copiar o convite.");
+    }
   }
 
   const playerCount = room?.users?.length ?? 0;
