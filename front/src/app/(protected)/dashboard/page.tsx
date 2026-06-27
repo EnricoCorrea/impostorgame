@@ -1,2 +1,61 @@
-const actions = ["Login e logout", "Cadastro de usuário", "Perfil autenticado", "CRUD de usuários", "Filtros de usuário", "CRUD e participação em salas"];
-export default function DashboardPage() { return <><header className="page-header"><div><span className="eyebrow">Painel do anfitrião</span><h1>Prontos para encontrar o impostor?</h1><p>A sua parte do trabalho cobre 15 ações reais da API.</p></div><span className="status-pill">P1 conectado</span></header><section className="stats"><article><strong>15</strong><span>Ações implementadas</span></article><article><strong>3</strong><span>Componentes avaliáveis</span></article><article><strong>47</strong><span>Endpoints HTTP atuais</span></article></section><section className="dashboard-grid"><article className="panel"><span className="eyebrow">Seu escopo</span><h2>Autenticação, usuários e salas</h2><ul className="check-list">{actions.map((action) => <li key={action}>✓ <span>{action}</span></li>)}</ul></article><article className="panel accent-panel"><span className="eyebrow light">Próximo passo</span><h2>Crie uma sala</h2><p>Convide pelo menos três jogadores e então entregue o fluxo para o módulo de partidas.</p><a href="/rooms" className="button button-light">Ver salas →</a></article></section></>; }
+const roomChecks = [
+  "Contas de jogadores prontas para entrar",
+  "Salas com acesso controlado por convite",
+  "Participantes organizados antes da rodada",
+  "Perfis e permissoes revisados",
+  "Administradores com acesso ao painel",
+  "Historico de salas disponivel para consulta",
+];
+
+export default function DashboardPage() {
+  return (
+    <>
+      <header className="page-header">
+        <div>
+          <span className="eyebrow">Visao geral</span>
+          <h1>Controle da operacao do jogo</h1>
+          <p>Monitore a preparacao das salas e mantenha os jogadores prontos para a proxima rodada.</p>
+        </div>
+        <span className="status-pill">Painel online</span>
+      </header>
+
+      <section className="stats">
+        <article>
+          <strong>15</strong>
+          <span>Controles ativos</span>
+        </article>
+        <article>
+          <strong>3</strong>
+          <span>Areas de gestao</span>
+        </article>
+        <article>
+          <strong>47</strong>
+          <span>Operacoes registradas</span>
+        </article>
+      </section>
+
+      <section className="dashboard-grid">
+        <article className="panel">
+          <span className="eyebrow">Preparacao</span>
+          <h2>Jogadores, acessos e salas</h2>
+          <ul className="check-list">
+            {roomChecks.map((check) => (
+              <li key={check}>
+                OK <span>{check}</span>
+              </li>
+            ))}
+          </ul>
+        </article>
+
+        <article className="panel accent-panel">
+          <span className="eyebrow light">Rodada</span>
+          <h2>Abra uma sala para os jogadores</h2>
+          <p>Defina a sala, confirme os participantes e deixe tudo pronto antes de iniciar a partida.</p>
+          <a href="/rooms" className="button button-light">
+            Gerenciar salas
+          </a>
+        </article>
+      </section>
+    </>
+  );
+}
