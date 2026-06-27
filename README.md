@@ -1,4 +1,9 @@
 <img width="150" height="150" alt="hd-red-among-us-mini-crewmate-baby-sus-sticky-note-hat-png-7339616951222967oki7a2sjw (2)" src="https://github.com/user-attachments/assets/d9ae575c-3241-431a-9ef6-d47f1fef64dc" />
+
+
+
+
+
 # Impostor Game
 
 Aplicacao full stack para gerenciar e jogar partidas do Impostor Game. O projeto tem uma API em NestJS, banco PostgreSQL e um painel web em Next.js.
