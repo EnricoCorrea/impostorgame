@@ -85,3 +85,6 @@ label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:800;
 @media (min-width:1101px) and (max-height:760px){
   .game-page .game-status-panel,.game-page .chat-panel,.game-page .table-stage,.game-page .clue-panel{max-height:none}
 }
+
+.chat-user-group{background:#ffffff;border:1px solid #eeeeea;border-radius:11px;padding:9px;display:flex;flex-direction:column;gap:7px}.chat-user-group>strong{color:var(--green);font-size:11px;text-transform:uppercase;letter-spacing:.06em}.chat-user-group .chat-message{display:block;background:#f8f7f1;border:0;border-radius:8px;padding:7px 9px;font-size:12px;line-height:1.35;overflow-wrap:anywhere}
+@media (min-width:1101px){.game-page .chat-user-group{padding:8px;gap:6px}.game-page .chat-user-group>strong{font-size:10px}.game-page .chat-user-group .chat-message{padding:6px 8px;font-size:12px}}

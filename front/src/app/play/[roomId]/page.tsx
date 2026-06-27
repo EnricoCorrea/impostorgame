@@ -35,6 +35,7 @@ export default function PlayRoomPage() {
   const [copied, setCopied] = useState(false);
   const [localVotedRound, setLocalVotedRound] = useState<number | null>(null);
   const chatLogRef = useRef<HTMLDivElement | null>(null);
+  const activeGameIdRef = useRef<number | null>(null);
 
   const inviteLink = typeof window === "undefined" ? "" : `${window.location.origin}/play/${roomId}`;
   const isHost = Boolean(me && room && me.id === room.hostId);
@@ -42,6 +43,18 @@ export default function PlayRoomPage() {
   const myPlayer = useMemo(() => state?.players.find((player) => player.userId === me?.id) ?? null, [me?.id, state]);
   const activePlayers = state?.players ?? [];
   const currentRoundClues = useMemo(() => clues.filter((item) => item.roundNumber === state?.round), [clues, state?.round]);
+  const chatGroups = useMemo(() => {
+    const sortedMessages = [...messages].sort((a, b) => {
+      const dateDiff = new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
+      return dateDiff || b.id - a.id;
+    });
+    return sortedMessages.reduce<Array<{ playerId: number; items: Message[] }>>((groups, item) => {
+      const group = groups.find((entry) => entry.playerId === item.playerId);
+      if (group) group.items.push(item);
+      else groups.push({ playerId: item.playerId, items: [item] });
+      return groups;
+    }, []);
+  }, [messages]);
   const aliveCount = state?.aliveCount ?? activePlayers.filter((player) => player.isAlive).length;
   const clueCount = state?.clueCount ?? currentRoundClues.length;
   const voteCount = state?.voteCount ?? 0;
@@ -71,10 +84,23 @@ export default function PlayRoomPage() {
         roomsService.get(roomId),
         gamesService.list({ room_id: roomId, page: 1, limit: 10 }),
       ]);
-      const games = gamesPage?.data ?? [];
+      const games = [...(gamesPage?.data ?? [])].sort((a, b) => {
+        const dateDiff = new Date(b.startedAt ?? 0).getTime() - new Date(a.startedAt ?? 0).getTime();
+        return dateDiff || b.id - a.id;
+      });
       const activeGame = games.find((item) => !item.finishedAt) ?? games[0] ?? null;
+      const changedGame = activeGameIdRef.current !== (activeGame?.id ?? null);
+      activeGameIdRef.current = activeGame?.id ?? null;
       setRoom(freshRoom);
       setGame(activeGame);
+      if (changedGame) {
+        setState(null);
+        setClues([]);
+        setMessages([]);
+        setClue("");
+        setMessage("");
+        setLocalVotedRound(null);
+      }
       if (activeGame) {
         const [privateState, cluePage, messagePage] = await Promise.all([
           gamesService.state(activeGame.id).catch(() => null),
@@ -90,6 +116,7 @@ export default function PlayRoomPage() {
         setClues([]);
         setMessages([]);
         setLocalVotedRound(null);
+        activeGameIdRef.current = null;
       }
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "Nao foi possivel carregar a sala.");
@@ -106,7 +133,7 @@ export default function PlayRoomPage() {
 
   useEffect(() => {
     const chatLog = chatLogRef.current;
-    if (chatLog) chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: "smooth" });
+    if (chatLog) chatLog.scrollTo({ top: 0, behavior: "smooth" });
   }, [messages, phase]);
 
   async function createOrStartGame() {
@@ -114,11 +141,17 @@ export default function PlayRoomPage() {
     setBusy(true);
     setNotice("");
     try {
-      const current = game ?? await gamesService.create(room.id);
+      const current = game && !game.finishedAt ? game : await gamesService.create(room.id);
       const started = await gamesService.start(current.id);
       setGame(started);
+      setState(null);
+      setClues([]);
+      setMessages([]);
+      setClue("");
+      setMessage("");
+      setLocalVotedRound(null);
       await load({ silent: true });
-      setNotice("Partida iniciada.");
+      setNotice(game?.finishedAt ? "Nova partida iniciada." : "Partida iniciada.");
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "Nao foi possivel iniciar a partida.");
     } finally {
@@ -237,7 +270,7 @@ export default function PlayRoomPage() {
                 : "O impostor sobreviveu ate o fim."}
           </p>
           <strong>Vencedor: {winner === "IMPOSTOR" ? "Impostor" : "Inocentes"}</strong>
-          <div className="modal-actions"><ActionButton variant="secondary" onClick={() => router.push("/play")}>Voltar para salas</ActionButton></div>
+          <div className="modal-actions">{isHost && <ActionButton onClick={createOrStartGame} loading={busy}>Iniciar nova partida</ActionButton>}<ActionButton variant="secondary" onClick={() => router.push("/play")}>Voltar para salas</ActionButton></div>
         </section>
       )}
 
@@ -286,9 +319,11 @@ export default function PlayRoomPage() {
         <section className="play-panel chat-panel">
           <div><span className="eyebrow">Chat</span><h2>Discussao</h2></div>
           <div className="chat-log" ref={chatLogRef}>
-            {phase !== "DISCUSSING" && <p className="empty-state">O chat abre apenas na fase de discussao.</p>}
-            {phase === "DISCUSSING" && messages.length === 0 ? <p className="empty-state">O chat ainda esta quieto.</p> : messages.map((item) => (
-              <div className="chat-message" key={item.id}><strong>{playerName(item.playerId)}</strong><span>{item.content}</span></div>
+            {phase !== "DISCUSSING" ? <p className="empty-state">O chat abre apenas na fase de discussao.</p> : messages.length === 0 ? <p className="empty-state">O chat ainda esta quieto.</p> : chatGroups.map((group) => (
+              <article className="chat-user-group" key={group.playerId}>
+                <strong>{playerName(group.playerId)}</strong>
+                {group.items.map((item) => <span className="chat-message" key={item.id}>{item.content}</span>)}
+              </article>
             ))}
           </div>
           <form className="inline-form" onSubmit={sendMessage}>
