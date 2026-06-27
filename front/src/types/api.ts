@@ -91,6 +91,8 @@ export interface Message {
   playerId: number;
   content: string;
   createdAt?: string;
+  game?: Game;
+  player?: Player;
 }
 
 export interface Vote {
