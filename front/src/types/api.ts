@@ -70,6 +70,7 @@ export interface GamePrivateState {
   round: number;
   finishedAt?: string | null;
   winner?: "IMPOSTOR" | "INNOCENT" | null;
+  phaseEndsAt?: string | null;
   players: PlayerState[];
   aliveCount?: number;
   clueCount?: number;

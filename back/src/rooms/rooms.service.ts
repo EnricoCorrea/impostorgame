@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
@@ -59,6 +60,10 @@ export class RoomsService {
 
     if (!room) {
       throw new NotFoundException('Room not found');
+    }
+
+    if (room.status === 'CLOSED') {
+      throw new BadRequestException('Sala excluida.');
     }
 
     const existingUser = await this.roomUserModel.findOne({
@@ -120,6 +125,7 @@ export class RoomsService {
 
   async findAll(pagination: PaginationDto, filters: RoomFilterDto) {
     const where = {
+      status: { [Op.ne]: 'CLOSED' },
       ...(filters.name && {
         name: {
           [Op.iLike]: `%${filters.name}%`, // busca parcial
@@ -157,7 +163,7 @@ export class RoomsService {
       ],
     });
 
-    if (!room) throw new NotFoundException('Room not found');
+    if (!room || room.status === 'CLOSED') throw new NotFoundException('Room not found');
     await this.applyEffectiveRoomStatus([room]);
     return room;
   }
@@ -206,11 +212,53 @@ export class RoomsService {
     return room;
   }
 
-  async remove(id: number) {
+  async remove(id: number, requestingUserId: number, role?: string) {
     const room = await this.roomModel.findByPk(id);
     if (!room) throw new NotFoundException('Room not found');
-    await room.destroy();
+
+    this.assertHost(room, requestingUserId, role);
+
+    await this.roomUserModel.destroy({ where: { roomId: id } });
+    await room.update({ status: 'CLOSED', closedAt: new Date() });
     return room;
+  }
+
+  async kickUser(roomId: number, targetUserId: number, requestingUserId: number) {
+    const room = await this.roomModel.findByPk(roomId);
+    if (!room) throw new NotFoundException('Room not found');
+
+    this.assertHost(room, requestingUserId);
+
+    if (targetUserId === room.hostId) {
+      throw new BadRequestException('O anfitriao nao pode ser expulso da sala.');
+    }
+
+    return this.leaveRoom(roomId, targetUserId);
+  }
+
+  private assertHost(room: Room, requestingUserId: number, role?: string) {
+    if (role === 'ADMIN' || room.hostId === requestingUserId) return;
+
+    throw new ForbiddenException('Somente o anfitriao pode executar esta acao.');
+  }
+
+  private async reconcileRoomAfterUserLeaves(roomId: number, userId: number) {
+    const room = await this.roomModel.findByPk(roomId);
+    if (!room || room.status === 'CLOSED') return;
+
+    const remainingUsers = await this.roomUserModel.findAll({
+      where: { roomId },
+      order: [['userId', 'ASC']],
+    });
+
+    if (remainingUsers.length === 0) {
+      await room.update({ status: 'CLOSED', closedAt: new Date() });
+      return;
+    }
+
+    if (room.hostId === userId) {
+      await room.update({ hostId: remainingUsers[0].userId });
+    }
   }
 
   async leaveRoom(roomId: number, userId: number) {
@@ -222,7 +270,16 @@ export class RoomsService {
       order: [['startedAt', 'DESC']],
     });
 
-    // se existe partida em andamento → elimina jogador
+    if (activeGame?.status === 'WAITING') {
+      await this.playerModel.destroy({
+        where: {
+          gameId: activeGame.id,
+          userId,
+        },
+      });
+    }
+
+    // se existe partida em andamento -> elimina jogador
     if (activeGame && activeGame.status !== 'WAITING') {
       const player = await this.playerModel.findOne({
         where: {
@@ -236,10 +293,13 @@ export class RoomsService {
         await player.save();
       }
     }
-
     const deleted = await this.roomUserModel.destroy({
       where: { roomId, userId },
     });
+
+    if (deleted > 0) {
+      await this.reconcileRoomAfterUserLeaves(roomId, userId);
+    }
 
     return {
       success: deleted > 0,

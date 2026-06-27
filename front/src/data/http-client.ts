@@ -1,10 +1,7 @@
 import type { ApiErrorBody } from "@/types/api";
+import { getApiBaseUrl } from "@/data/api-config";
 
 const TOKEN_KEY = "impostor-game-token";
-
-function getApiUrl() {
-  return process.env.NEXT_PUBLIC_API_URL ?? "/api";
-}
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -40,7 +37,7 @@ async function readErrorMessage(response: Response) {
 
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = tokenStore.get();
-  const response = await fetch(`${getApiUrl()}${path}`, {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",

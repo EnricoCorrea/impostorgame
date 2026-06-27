@@ -433,6 +433,11 @@ export class GamesService {
       throw new ForbiddenException('Usuario nao participa deste jogo');
     }
 
+    if (!game.finishedAt && (game.status === 'DISCUSSING' || game.status === 'VOTING') && !getPhaseExpiration(game.id)) {
+      this.schedulePhaseTimeout(game);
+    }
+
+    const phaseExpiration = getPhaseExpiration(game.id);
     const alivePlayers = game.players.filter((p) => p.isAlive);
     const [clueCount, voteCount, votes] = await Promise.all([
       this.clueModel.count({
@@ -457,6 +462,7 @@ export class GamesService {
       round: game.roundNumber,
       finishedAt: game.finishedAt,
       winner: game.finishedAt ? game.winner : null,
+      phaseEndsAt: phaseExpiration ? new Date(phaseExpiration).toISOString() : null,
       aliveCount: alivePlayers.length,
       clueCount,
       voteCount,

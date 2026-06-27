@@ -112,3 +112,7 @@ label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:800;
 }
 
 .room-row-meta{display:flex!important;align-items:center;gap:7px;flex-wrap:wrap;margin-top:5px}.room-row-meta span{margin:0}.room-status{display:inline-flex!important;align-items:center;width:max-content;border-radius:999px;padding:4px 8px;font-size:10px!important;font-weight:900;text-transform:uppercase;letter-spacing:.04em;line-height:1}.room-status-waiting{background:#dff0d8;color:#246b3a}.room-status-playing{background:#fff0c6;color:#88650a}.room-status-closed{background:#eeeeee;color:#666}.play-home-page .room-row .button:disabled{transform:none}.play-home-page .room-row>div{min-width:0}.play-home-page .room-row strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.seat-actions{display:flex;gap:6px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.game-page .seat-actions .button{min-height:32px;padding:0 10px;font-size:11px;border-radius:8px}
+.timer-box{margin-top:14px;background:#ffffff18;border:1px solid #ffffff28;border-radius:12px;padding:11px 12px;color:white;display:flex;align-items:center;justify-content:space-between;gap:10px}.timer-box span{font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:900;color:#d8e7df}.timer-box strong{font-size:24px;line-height:1;color:var(--lime)}
+@media (min-width:1101px){.game-page .timer-box{margin-top:10px;padding:9px 10px}.game-page .timer-box strong{font-size:21px}}
