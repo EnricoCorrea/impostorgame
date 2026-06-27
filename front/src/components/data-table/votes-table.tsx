@@ -1,6 +1,5 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { DataTable, type Column } from "@/components/data-table/data-table";
 import type { Vote } from "@/types/api";
 
@@ -13,22 +12,25 @@ export function VotesTable({
   lastPage,
   onPageChange,
   onFilterChange,
-  actions,
+  playerName,
+  roomName,
 }: {
   rows: Vote[];
   loading: boolean;
   connected: boolean;
-  filters: { gameId: string; voterId: string; targetId: string; roundNumber: string };
+  filters: { roomId: string; voterId: string; targetId: string };
   page: number;
   lastPage: number;
   onPageChange: (page: number) => void;
   onFilterChange: (key: string, value: string) => void;
-  actions: (vote: Vote) => ReactNode;
+  playerName: (gameId: number, playerId: number | null | undefined) => string;
+  roomName: (gameId: number) => string;
 }) {
   const columns: Column<Vote>[] = [
-    { key: "game", label: "Partida", render: (vote) => <strong>#{vote.gameId}</strong> },
-    { key: "voter", label: "Votante", render: (vote) => `Jogador #${vote.voterId}` },
-    { key: "target", label: "Alvo", render: (vote) => vote.targetPlayerId ? `Jogador #${vote.targetPlayerId}` : "Sem alvo" },
+    { key: "room", label: "Sala", render: (vote) => <strong>{roomName(vote.gameId)}</strong> },
+    { key: "voter", label: "Votante", render: (vote) => playerName(vote.gameId, vote.voterId) },
+    { key: "target", label: "Votou em", render: (vote) => playerName(vote.gameId, vote.targetPlayerId) },
+    { key: "game", label: "Partida", render: (vote) => `#${vote.gameId}` },
     { key: "round", label: "Rodada", render: (vote) => vote.roundNumber },
   ];
 
@@ -44,13 +46,11 @@ export function VotesTable({
       lastPage={lastPage}
       onPageChange={onPageChange}
       filters={[
-        { key: "game", label: "Filtrar partida", placeholder: "ID da partida", value: filters.gameId },
-        { key: "voter", label: "Filtrar votante", placeholder: "ID do jogador", value: filters.voterId },
-        { key: "target", label: "Filtrar alvo", placeholder: "ID do jogador", value: filters.targetId },
-        { key: "round", label: "Filtrar rodada", placeholder: "Numero da rodada", value: filters.roundNumber },
+        { key: "room", label: "Sala", placeholder: "ID da sala", value: filters.roomId },
+        { key: "voter", label: "Votante", placeholder: "ID do jogador", value: filters.voterId },
+        { key: "target", label: "Alvo", placeholder: "ID do jogador", value: filters.targetId },
       ]}
       onFilterChange={onFilterChange}
-      actions={actions}
     />
   );
 }
