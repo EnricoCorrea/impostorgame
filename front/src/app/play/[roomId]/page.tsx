@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ActionButton } from "@/components/ui/action-button";
@@ -34,6 +34,7 @@ export default function PlayRoomPage() {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [localVotedRound, setLocalVotedRound] = useState<number | null>(null);
+  const chatLogRef = useRef<HTMLDivElement | null>(null);
 
   const inviteLink = typeof window === "undefined" ? "" : `${window.location.origin}/play/${roomId}`;
   const isHost = Boolean(me && room && me.id === room.hostId);
@@ -102,6 +103,11 @@ export default function PlayRoomPage() {
     const timer = window.setInterval(() => load({ silent: true }), 2500);
     return () => window.clearInterval(timer);
   }, [load]);
+
+  useEffect(() => {
+    const chatLog = chatLogRef.current;
+    if (chatLog) chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: "smooth" });
+  }, [messages, phase]);
 
   async function createOrStartGame() {
     if (!room) return;
@@ -279,7 +285,7 @@ export default function PlayRoomPage() {
 
         <section className="play-panel chat-panel">
           <div><span className="eyebrow">Chat</span><h2>Discussao</h2></div>
-          <div className="chat-log">
+          <div className="chat-log" ref={chatLogRef}>
             {phase !== "DISCUSSING" && <p className="empty-state">O chat abre apenas na fase de discussao.</p>}
             {phase === "DISCUSSING" && messages.length === 0 ? <p className="empty-state">O chat ainda esta quieto.</p> : messages.map((item) => (
               <div className="chat-message" key={item.id}><strong>{playerName(item.playerId)}</strong><span>{item.content}</span></div>
