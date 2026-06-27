@@ -11,10 +11,11 @@ import { Vote } from 'src/votes/entities/vote.entity';
 import { Room } from 'src/rooms/entities/room.entity';
 import { Word } from 'src/words/entities/word.entity';
 import { GameWord } from 'src/words/entities/game-word.entity';
+import { Clue } from 'src/clues/entities/clue.entity';
 
 @Module({
   imports: [
-    SequelizeModule.forFeature([Game, Player, Vote, Room, Word, GameWord]),
+    SequelizeModule.forFeature([Game, Player, Vote, Room, Word, GameWord, Clue]),
   ],
   controllers: [GamesController],
   providers: [GamesService, GamesGateway],

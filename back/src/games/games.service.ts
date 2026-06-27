@@ -21,6 +21,7 @@ import {
 import { GameFilterDto } from './dto/games-filter.dto';
 import { Word } from '../words/entities/word.entity';
 import { GameWord } from '../words/entities/game-word.entity';
+import { Clue } from 'src/clues/entities/clue.entity';
 
 @Injectable()
 export class GamesService {
@@ -42,6 +43,9 @@ export class GamesService {
 
     @InjectModel(GameWord)
     private gameWordModel: typeof GameWord,
+  
+    @InjectModel(Clue)
+    private clueModel: typeof Clue,
   ) {}
 
   async findAll(pagination: PaginationDto, filters: GameFilterDto) {
@@ -182,8 +186,33 @@ export class GamesService {
       { status: 'PLAYING' },
       { where: { id: game.roomId } },
     );
-    this.schedulePhaseTimeout(game);
+    clearPhaseExpiration(game.id);
 
+    return game;
+  }
+
+  async advancePhase(gameId: number, requestingUserId?: number) {
+    const game = await this.gameModel.findByPk(gameId, {
+      include: [Room],
+    });
+
+    if (!game) throw new NotFoundException('Game not found');
+
+    if (requestingUserId != null && game.room.hostId !== requestingUserId) {
+      throw new ForbiddenException('Somente o anfitriao pode avancar a fase');
+    }
+
+    if (game.finishedAt) {
+      throw new BadRequestException('Game already finished');
+    }
+
+    if (game.status === 'WAITING') {
+      throw new BadRequestException('Game has not started');
+    }
+
+    this.nextPhase(game);
+    await game.save();
+    this.schedulePhaseTimeout(game);
     return game;
   }
 
@@ -219,14 +248,14 @@ export class GamesService {
     }
   }
 
-  async vote(gameId: number, voterId: number, targetId: number) {
+  async vote(gameId: number, voterId: number, targetId?: number | null) {
     const game = await this.gameModel.findByPk(gameId);
 
     if (!game) throw new NotFoundException('Game not found');
 
     if (hasPhaseExpired(gameId)) {
       throw new BadRequestException(
-        'Tempo de vota\u00e7\u00e3o expirou; rodada ignorada.',
+        'Tempo de votacao expirou; rodada ignorada.',
       );
     }
 
@@ -246,14 +275,22 @@ export class GamesService {
       throw new BadRequestException('Dead players cannot vote');
     }
 
-    const target = await this.playerModel.findByPk(targetId);
+    let target: Player | null = null;
 
-    if (!target || target.gameId !== gameId) {
-      throw new BadRequestException('Invalid target');
-    }
+    if (targetId != null) {
+      target = await this.playerModel.findByPk(targetId);
 
-    if (!target.isAlive) {
-      throw new BadRequestException('Cannot vote on dead player');
+      if (!target || target.gameId !== gameId) {
+        throw new BadRequestException('Invalid target');
+      }
+
+      if (!target.isAlive) {
+        throw new BadRequestException('Cannot vote on dead player');
+      }
+
+      if (target.id === player.id) {
+        throw new BadRequestException('Player cannot vote on themselves');
+      }
     }
 
     const existingVote = await this.voteModel.findOne({
@@ -267,7 +304,7 @@ export class GamesService {
     await this.voteModel.create({
       gameId,
       voterId: player.id,
-      targetPlayerId: targetId,
+      targetPlayerId: target?.id ?? null,
       roundNumber: game.roundNumber,
     });
 
@@ -275,12 +312,16 @@ export class GamesService {
   }
 
   async checkAllVoted(gameId: number) {
+    const game = await this.gameModel.findByPk(gameId);
+
+    if (!game) throw new NotFoundException('Game not found');
+
     const alivePlayers = await this.playerModel.findAll({
       where: { gameId, isAlive: true },
     });
 
     const votes = await this.voteModel.findAll({
-      where: { gameId },
+      where: { gameId, roundNumber: game.roundNumber },
     });
 
     if (votes.length >= alivePlayers.length) {
@@ -293,9 +334,11 @@ export class GamesService {
   async schedulePhaseTimeout(game: Game) {
     clearPhaseExpiration(game.id);
 
-    if (game.status !== 'CLUE' && game.status !== 'VOTING') {
+    if (game.status !== 'DISCUSSING' && game.status !== 'VOTING') {
       return;
     }
+
+    const phaseDuration = game.status === 'DISCUSSING' ? 30000 : 15000;
 
     const timer = setTimeout(async () => {
       const currentGame = await this.gameModel.findByPk(game.id, {
@@ -306,7 +349,7 @@ export class GamesService {
         return;
       }
 
-      if (currentGame.status === 'CLUE') {
+      if (currentGame.status === 'DISCUSSING') {
         this.nextPhase(currentGame);
         await currentGame.save();
         this.schedulePhaseTimeout(currentGame);
@@ -316,14 +359,14 @@ export class GamesService {
       if (currentGame.status === 'VOTING') {
         await this.resolveVoting(currentGame.id);
       }
-    }, 15000);
+    }, phaseDuration);
 
-    setPhaseExpiration(game.id, Date.now() + 15000, timer);
+    setPhaseExpiration(game.id, Date.now() + phaseDuration, timer);
   }
 
   async getGameState(gameId: number, userId: number) {
     const game = await this.gameModel.findByPk(gameId, {
-      include: [Player],
+      include: [{ model: Player, include: [Word, User] }],
     });
 
     if (!game) throw new NotFoundException('Game not found');
@@ -331,28 +374,63 @@ export class GamesService {
     const me = game.players.find((p) => p.userId === userId);
 
     if (!me) {
-      throw new ForbiddenException('Usu\u00e1rio n\u00e3o participa deste jogo');
+      throw new ForbiddenException('Usuario nao participa deste jogo');
     }
+
+    const alivePlayers = game.players.filter((p) => p.isAlive);
+    const [clueCount, voteCount, votes] = await Promise.all([
+      this.clueModel.count({
+        where: { gameId, roundNumber: game.roundNumber },
+      }),
+      this.voteModel.count({
+        where: { gameId, roundNumber: game.roundNumber },
+      }),
+      this.voteModel.findAll({
+        where: { gameId, roundNumber: game.roundNumber },
+      }),
+    ]);
+
+    const votesByTarget = votes.reduce<Record<number, number>>((acc, vote) => {
+      if (vote.targetPlayerId == null) return acc;
+      acc[vote.targetPlayerId] = (acc[vote.targetPlayerId] || 0) + 1;
+      return acc;
+    }, {});
 
     return {
       status: game.status,
       round: game.roundNumber,
       finishedAt: game.finishedAt,
       winner: game.finishedAt ? game.winner : null,
+      aliveCount: alivePlayers.length,
+      clueCount,
+      voteCount,
 
       players: game.players.map((p) => ({
         id: p.id,
         userId: p.userId,
+        name: p.user?.name,
         isAlive: p.isAlive,
+        voteCount: votesByTarget[p.id] || 0,
       })),
 
-      myRole: me?.role || null,
+      myRole: game.status === 'WAITING' && !game.finishedAt ? null : me?.role || null,
+      myPlayerId: me?.id || null,
+      myWord:
+        game.status === 'WAITING'
+          ? null
+          : me?.role === 'IMPOSTOR'
+            ? me.word?.impostorClue || null
+            : me?.word?.word || null,
     };
   }
 
   async resolveVoting(gameId: number) {
+    const game = await this.gameModel.findByPk(gameId);
+
+    if (!game) throw new NotFoundException('Game not found');
+
     const votes = await this.voteModel.findAll({
-      where: { gameId },
+      where: { gameId, roundNumber: game.roundNumber },
     });
 
     if (votes.length === 0) {
@@ -371,25 +449,18 @@ export class GamesService {
     }
 
     const maxVotes = Math.max(...Object.values(count));
-
     const tiedPlayers = Object.keys(count).filter(
       (id) => count[Number(id)] === maxVotes,
     );
 
-    // Se tiver empate ningu\u00e9m sai
     if (tiedPlayers.length > 1) {
       await this.voteModel.destroy({
-        where: { gameId },
+        where: { gameId, roundNumber: game.roundNumber },
       });
-
-      const game = await this.gameModel.findByPk(gameId);
-
-      if (!game) {
-        throw new NotFoundException('Game not found');
-      }
 
       this.nextPhase(game);
       await game.save();
+      clearPhaseExpiration(game.id);
 
       return {
         message: 'Tie vote. No player eliminated.',
@@ -397,7 +468,6 @@ export class GamesService {
     }
 
     const eliminatedId = Number(tiedPlayers[0]);
-
     const player = await this.playerModel.findByPk(eliminatedId);
 
     if (!player) {
@@ -408,7 +478,7 @@ export class GamesService {
     await player.save();
 
     await this.voteModel.destroy({
-      where: { gameId },
+      where: { gameId, roundNumber: game.roundNumber },
     });
 
     return this.checkWin(gameId);
@@ -441,10 +511,7 @@ export class GamesService {
 
     this.nextPhase(game);
     await game.save();
-    await this.roomModel.update(
-      { status: 'WAITING' },
-      { where: { id: game.roomId } },
-    );
+    clearPhaseExpiration(game.id);
 
     return game;
   }

@@ -36,12 +36,12 @@ export class GamesController {
   constructor(private readonly gamesService: GamesService) {}
 
   @Post('room/:roomId')
-  @ApiOperation({ summary: 'Criar jogo na sala (somente anfitrião)' })
+  @ApiOperation({ summary: 'Criar jogo na sala (somente anfitriao)' })
   @ApiCreatedResponse({
     description: 'Jogo e jogadores criados com uma palavra sorteada',
   })
   @ApiBadRequestResponse({
-    description: 'Sala sem jogadores/palavras suficientes ou jogo já ativo',
+    description: 'Sala sem jogadores/palavras suficientes ou jogo ja ativo',
   })
   createGame(@Param() params: RoomIdParamDto, @Req() req) {
     return this.gamesService.createGame(params.roomId, req.user.id);
@@ -49,14 +49,19 @@ export class GamesController {
 
   @Post(':id/start')
   @ApiOperation({
-    summary: 'Iniciar jogo (somente anfitrião e mínimo de 3 jogadores)',
+    summary: 'Iniciar jogo (somente anfitriao e minimo de 3 jogadores)',
   })
   startGame(@Param() params: GameIdParamDto, @Req() req) {
     return this.gamesService.startGame(params.id, req.user.id);
   }
 
+  @Post(':id/next-phase')
+  @ApiOperation({ summary: 'Avancar fase do jogo (somente anfitriao)' })
+  nextPhase(@Param() params: GameIdParamDto, @Req() req) {
+    return this.gamesService.advancePhase(params.id, req.user.id);
+  }
   @Post(':id/vote')
-  @ApiOperation({ summary: 'Registrar voto do usuário autenticado' })
+  @ApiOperation({ summary: 'Registrar voto do usuario autenticado' })
   vote(@Param() params: GameIdParamDto, @Req() req, @Body() dto: VoteGameDto) {
     return this.gamesService.vote(params.id, req.user.id, dto.targetId);
   }
@@ -68,7 +73,7 @@ export class GamesController {
   }
 
   @Get(':id/state')
-  @ApiOperation({ summary: 'Obter estado do jogo sem revelar papéis alheios' })
+  @ApiOperation({ summary: 'Obter estado do jogo sem revelar papeis alheios' })
   getState(@Param() params: GameIdParamDto, @Req() req) {
     return this.gamesService.getGameState(params.id, req.user.id);
   }

@@ -1,5 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateMessageDto } from './dto/create-message.dto';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { UpdateMessageDto } from './dto/update-message.dto';
 import { InjectModel } from '@nestjs/sequelize';
 import { Message } from './entities/message.entity';
@@ -14,13 +13,34 @@ export class MessagesService {
   constructor(
     @InjectModel(Message)
     private messageModel: typeof Message,
+    @InjectModel(Game)
+    private gameModel: typeof Game,
+    @InjectModel(Player)
+    private playerModel: typeof Player,
   ) {}
 
   async create(data: any) {
-    return await this.messageModel.create({
-      ...data,
-      status: 'WAITING',
-    });
+    const game = await this.gameModel.findByPk(data.gameId);
+
+    if (!game) {
+      throw new NotFoundException('Game not found');
+    }
+
+    if (game.status !== 'DISCUSSING') {
+      throw new BadRequestException('O chat so fica aberto na fase de discussao');
+    }
+
+    const player = await this.playerModel.findByPk(data.playerId);
+
+    if (!player || player.gameId !== data.gameId) {
+      throw new NotFoundException('Player not found');
+    }
+
+    if (!player.isAlive) {
+      throw new BadRequestException('Dead players cannot send messages');
+    }
+
+    return await this.messageModel.create(data);
   }
 
   async findAll(pagination: PaginationDto, filters: MessageFilterDto) {

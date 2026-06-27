@@ -3,7 +3,6 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { CreateClueDto } from './dto/create-clue.dto';
 import { UpdateClueDto } from './dto/update-clue.dto';
 import { InjectModel } from '@nestjs/sequelize';
 import { Clue } from './entities/clue.entity';
@@ -12,7 +11,6 @@ import { Player } from 'src/players/entities/player.entity';
 import { Word } from 'src/words/entities/word.entity';
 import { paginate } from '../common/enums/utils/paginate';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
-import { hasPhaseExpired } from '../common/enums/utils/phase-timeout-store';
 import { ClueFilterDto } from './dto/clues-filter.dto';
 import { Op } from 'sequelize';
 
@@ -35,20 +33,18 @@ export class CluesService {
     }
 
     if (game.status !== 'CLUE') {
-      throw new BadRequestException('O jogo não está na fase de dicas');
+      throw new BadRequestException('O jogo nao esta na fase de dicas');
     }
 
-    if (hasPhaseExpired(game.id)) {
-      throw new BadRequestException(
-        'Tempo para dica expirou; rodada ignorada.',
-      );
+    if (data.roundNumber !== game.roundNumber) {
+      throw new BadRequestException('Rodada invalida para esta dica');
     }
 
     const player = await this.playerModel.findByPk(data.playerId, {
       include: [Word],
     });
 
-    if (!player) {
+    if (!player || player.gameId !== data.gameId) {
       throw new NotFoundException('Player not found');
     }
 
@@ -56,7 +52,6 @@ export class CluesService {
       throw new BadRequestException('Dead players cannot send clues');
     }
 
-    // impede múltiplas dicas na mesma rodada
     const existingClue = await this.clueModel.findOne({
       where: {
         gameId: data.gameId,
@@ -71,7 +66,6 @@ export class CluesService {
       );
     }
 
-    // RN005
     if (
       player.role !== 'IMPOSTOR' &&
       player.word?.word &&
@@ -82,17 +76,28 @@ export class CluesService {
       );
     }
 
-    return await this.clueModel.create({
-      ...data,
-      status: 'WAITING',
-    });
+    const created = await this.clueModel.create(data);
+
+    const [aliveCount, clueCount] = await Promise.all([
+      this.playerModel.count({ where: { gameId: data.gameId, isAlive: true } }),
+      this.clueModel.count({
+        where: { gameId: data.gameId, roundNumber: data.roundNumber },
+      }),
+    ]);
+
+    if (aliveCount > 0 && clueCount >= aliveCount) {
+      game.status = 'DISCUSSING';
+      await game.save();
+    }
+
+    return created;
   }
 
   async findAll(pagination: PaginationDto, filters: ClueFilterDto) {
     const where = {
       ...(filters.clue && {
         clue: {
-          [Op.iLike]: `%${filters.clue}%`, // busca parcial
+          [Op.iLike]: `%${filters.clue}%`,
         },
       }),
       ...(filters.game_id && {
