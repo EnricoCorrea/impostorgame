@@ -58,6 +58,7 @@ export class GamesService {
       where,
       distinct: true,
       include: [{ model: Room }],
+      order: [['id', 'DESC']],
     });
   }
 
