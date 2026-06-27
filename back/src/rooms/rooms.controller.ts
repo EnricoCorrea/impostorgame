@@ -18,9 +18,11 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt/jwt.guard';
-import { Roles } from '../auth/decorator/roles.decorator';
-import { RolesGuard } from '../auth/jwt/roles.guard';
-import { CreateRoomDto, RoomIdParamDto } from './dto/create-room.dto';
+import {
+  CreateRoomDto,
+  KickUserParamDto,
+  RoomIdParamDto,
+} from './dto/create-room.dto';
 import { RoomListQueryDto } from './dto/rooms-filter.dto';
 import { RoomsService } from './rooms.service';
 
@@ -63,11 +65,15 @@ export class RoomsController {
   }
 
   @Delete(':id')
-  @UseGuards(RolesGuard)
-  @Roles('ADMIN')
-  @ApiOperation({ summary: 'Remover sala (ADMIN)' })
-  remove(@Param() params: RoomIdParamDto) {
-    return this.roomsService.remove(params.id);
+  @ApiOperation({ summary: 'Remover sala (anfitriao ou ADMIN)' })
+  remove(@Param() params: RoomIdParamDto, @Req() req) {
+    return this.roomsService.remove(params.id, req.user.id, req.user.role);
+  }
+
+  @Post(':id/kick/:userId')
+  @ApiOperation({ summary: 'Expulsar jogador da sala (anfitriao)' })
+  kickUser(@Param() params: KickUserParamDto, @Req() req) {
+    return this.roomsService.kickUser(params.id, params.userId, req.user.id);
   }
 
   @Post(':id/leave')

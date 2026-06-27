@@ -39,3 +39,11 @@ export class RoomIdPathDto {
   @Min(1)
   declare roomId: number;
 }
+
+export class KickUserParamDto extends RoomIdParamDto {
+  @ApiProperty({ example: 2 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  declare userId: number;
+}

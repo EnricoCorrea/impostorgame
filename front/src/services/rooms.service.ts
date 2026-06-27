@@ -8,5 +8,6 @@ export const roomsService = {
   create: (data: { name: string; maxUsers: number }) => apiRequest<Room>("/rooms", { method: "POST", body: JSON.stringify(data) }),
   join: (id: number) => apiRequest(`/rooms/${id}/join`, { method: "POST" }),
   leave: (id: number) => apiRequest(`/rooms/${id}/leave`, { method: "POST" }),
+  kick: (id: number, userId: number) => apiRequest(`/rooms/${id}/kick/${userId}`, { method: "POST" }),
   remove: (id: number) => apiRequest<Room>(`/rooms/${id}`, { method: "DELETE" }),
 };

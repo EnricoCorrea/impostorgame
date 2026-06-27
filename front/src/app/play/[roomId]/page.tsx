@@ -35,8 +35,10 @@ export default function PlayRoomPage() {
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [localVotedRound, setLocalVotedRound] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const chatLogRef = useRef<HTMLDivElement | null>(null);
   const activeGameIdRef = useRef<number | null>(null);
+  const hasTriedJoinRef = useRef(false);
 
   const inviteLink = typeof window === "undefined" ? "" : `${window.location.origin}/play/${roomId}`;
   const isHost = Boolean(me && room && me.id === room.hostId);
@@ -44,18 +46,10 @@ export default function PlayRoomPage() {
   const myPlayer = useMemo(() => state?.players.find((player) => player.userId === me?.id) ?? null, [me?.id, state]);
   const activePlayers = state?.players ?? [];
   const currentRoundClues = useMemo(() => clues.filter((item) => item.roundNumber === state?.round), [clues, state?.round]);
-  const chatGroups = useMemo(() => {
-    const sortedMessages = [...messages].sort((a, b) => {
-      const dateDiff = new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
-      return dateDiff || b.id - a.id;
-    });
-    return sortedMessages.reduce<Array<{ playerId: number; items: Message[] }>>((groups, item) => {
-      const group = groups.find((entry) => entry.playerId === item.playerId);
-      if (group) group.items.push(item);
-      else groups.push({ playerId: item.playerId, items: [item] });
-      return groups;
-    }, []);
-  }, [messages]);
+  const sortedMessages = useMemo(() => [...messages].sort((a, b) => {
+    const dateDiff = new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime();
+    return dateDiff || a.id - b.id;
+  }), [messages]);
   const aliveCount = state?.aliveCount ?? activePlayers.filter((player) => player.isAlive).length;
   const clueCount = state?.clueCount ?? currentRoundClues.length;
   const voteCount = state?.voteCount ?? 0;
@@ -65,6 +59,20 @@ export default function PlayRoomPage() {
   const winner = state?.winner ?? game?.winner ?? null;
   const myRole = state?.myRole ?? null;
   const didWin = Boolean(winner && myRole && winner === myRole);
+  const phaseSecondsLeft = useMemo(() => {
+    if (!state?.phaseEndsAt || hasFinished) return null;
+    return Math.max(0, Math.ceil((new Date(state.phaseEndsAt).getTime() - now) / 1000));
+  }, [hasFinished, now, state?.phaseEndsAt]);
+  const tablePlayers = useMemo(() => {
+    if (state?.players.length && !hasFinished) return state.players;
+    return room?.users?.map((user) => ({
+      id: user.id,
+      userId: user.id,
+      name: user.name,
+      isAlive: true,
+      voteCount: 0,
+    })) ?? [];
+  }, [hasFinished, room?.users, state?.players]);
 
   const playerName = useCallback((playerId: number) => {
     const fromState = activePlayers.find((player) => player.id === playerId)?.name;
@@ -80,14 +88,17 @@ export default function PlayRoomPage() {
     try {
       const profile = await authService.me();
       setMe(profile);
-      try {
-        await roomsService.join(roomId);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Nao foi possivel entrar nesta sala.";
-        setNotice(message);
-        window.sessionStorage.setItem("playNotice", message);
-        router.replace("/play");
-        return;
+      if (!hasTriedJoinRef.current) {
+        hasTriedJoinRef.current = true;
+        try {
+          await roomsService.join(roomId);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Nao foi possivel entrar nesta sala.";
+          setNotice(message);
+          window.sessionStorage.setItem("playNotice", message);
+          router.replace("/play");
+          return;
+        }
       }
       const [freshRoom, gamesPage] = await Promise.all([
         roomsService.get(roomId),
@@ -101,6 +112,12 @@ export default function PlayRoomPage() {
       const changedGame = activeGameIdRef.current !== (activeGame?.id ?? null);
       activeGameIdRef.current = activeGame?.id ?? null;
       setRoom(freshRoom);
+      if (!freshRoom.users?.some((user) => user.id === profile.id)) {
+        const message = "Voce nao esta mais nesta sala.";
+        window.sessionStorage.setItem("playNotice", message);
+        router.replace("/play");
+        return;
+      }
       setGame(activeGame);
       if (changedGame) {
         setState(null);
@@ -128,12 +145,21 @@ export default function PlayRoomPage() {
         activeGameIdRef.current = null;
       }
     } catch (err) {
-      setNotice(err instanceof Error ? err.message : "Nao foi possivel carregar a sala.");
+      const message = err instanceof Error ? err.message : "Nao foi possivel carregar a sala.";
+      setNotice(message);
+      if (message.includes("Room not found") || message.includes("Sala excluida")) {
+        window.sessionStorage.setItem("playNotice", "Esta sala nao esta mais disponivel.");
+        router.replace("/play");
+      }
     } finally {
       if (!options.silent) setBusy(false);
     }
   }, [localVotedRound, roomId, router]);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
   useEffect(() => {
     load();
     const timer = window.setInterval(() => load({ silent: true }), 2500);
@@ -142,7 +168,7 @@ export default function PlayRoomPage() {
 
   useEffect(() => {
     const chatLog = chatLogRef.current;
-    if (chatLog) chatLog.scrollTo({ top: 0, behavior: "smooth" });
+    if (chatLog) chatLog.scrollTo({ top: chatLog.scrollHeight, behavior: "smooth" });
   }, [messages, phase]);
 
   async function createOrStartGame() {
@@ -175,6 +201,32 @@ export default function PlayRoomPage() {
       router.push("/play");
     } catch (err) {
       setNotice(err instanceof Error ? err.message : "Nao foi possivel sair da sala.");
+      setBusy(false);
+    }
+  }
+
+  async function deleteRoom() {
+    if (!room || !window.confirm("Excluir esta sala?")) return;
+    setBusy(true);
+    try {
+      await roomsService.remove(room.id);
+      window.sessionStorage.setItem("playNotice", "Sala excluida.");
+      router.push("/play");
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Nao foi possivel excluir a sala.");
+      setBusy(false);
+    }
+  }
+
+  async function kickPlayer(userId: number) {
+    if (!room || !window.confirm("Expulsar este jogador da sala?")) return;
+    setBusy(true);
+    try {
+      await roomsService.kick(room.id, userId);
+      await load({ silent: true });
+    } catch (err) {
+      setNotice(err instanceof Error ? err.message : "Nao foi possivel expulsar o jogador.");
+    } finally {
       setBusy(false);
     }
   }
@@ -276,6 +328,7 @@ async function copyInvite() {
         <div className="room-actions">
           <ActionButton variant="secondary" onClick={copyInvite}>{copied ? "Link copiado" : "Copiar convite"}</ActionButton>
           <ActionButton variant="ghost" onClick={leaveRoom} disabled={busy}>Sair</ActionButton>
+          {isHost && <ActionButton variant="danger" onClick={deleteRoom} disabled={busy}>Excluir sala</ActionButton>}
           {isHost && !game && <ActionButton onClick={createOrStartGame} loading={busy}>Iniciar partida</ActionButton>}
           {isHost && game && !game.finishedAt && phase === "DISCUSSING" && <ActionButton onClick={advancePhase} loading={busy}>Abrir votacao</ActionButton>}
         </div>
@@ -309,6 +362,7 @@ async function copyInvite() {
             <strong>{state?.myWord ?? (game ? "Aguardando inicio" : "Sem partida")}</strong>
           </div>
           <div className="role-pill">{myRole === "IMPOSTOR" ? "Voce e o impostor" : myRole === "INNOCENT" ? "Voce conhece a palavra" : "Lobby"}</div>
+          {phaseSecondsLeft != null && (phase === "DISCUSSING" || phase === "VOTING") && <div className="timer-box"><span>Tempo</span><strong>{phaseSecondsLeft}s</strong></div>}
           {phase === "CLUE" && <div className="progress-box">Dicas: {clueCount}/{aliveCount}</div>}
           {phase === "VOTING" && <div className="progress-box">Votos: {voteCount}/{aliveCount}</div>}
           {hasFinished && <div className="winner-box">Vencedor: {winner === "IMPOSTOR" ? "Impostor" : "Inocentes"}</div>}
@@ -317,11 +371,11 @@ async function copyInvite() {
         <section className="play-panel table-stage">
           <div className="panel-title-row"><div><span className="eyebrow">Jogadores</span><h2>Mesa</h2></div><span className="status-pill">Rodada {state?.round ?? 0}</span></div>
           <div className="player-table">
-            {(state?.players.length ? state.players : room?.users?.map((user) => ({ id: user.id, userId: user.id, name: user.name, isAlive: true, voteCount: 0 })) ?? []).map((player) => (
+            {tablePlayers.map((player) => (
               <article className={`player-seat ${player.userId === me?.id ? "is-me" : ""}`} key={`${player.id}-${player.userId}`}>
                 <div className="seat-avatar">{(player.name ?? "J").slice(0, 2).toUpperCase()}</div>
                 <div><strong>{player.name ?? `Jogador #${player.userId}`}</strong><span>{player.isAlive ? "ativo" : "eliminado"}{player.userId === room?.hostId ? " - anfitriao" : ""}</span>{phase === "VOTING" && <span className="vote-count-label">{player.voteCount ?? 0} voto(s)</span>}</div>
-                {phase === "VOTING" && player.isAlive && player.id !== myPlayer?.id && <button className="button button-secondary" onClick={() => vote(player.id)} disabled={busy || hasVoted}>Votar</button>}
+                {(isHost && player.userId !== me?.id) || (phase === "VOTING" && player.isAlive && player.id !== myPlayer?.id) ? <div className="seat-actions">{isHost && player.userId !== me?.id && <button className="button button-danger" onClick={() => kickPlayer(player.userId)} disabled={busy}>Expulsar</button>}{phase === "VOTING" && player.isAlive && player.id !== myPlayer?.id && <button className="button button-secondary" onClick={() => vote(player.id)} disabled={busy || hasVoted}>Votar</button>}</div> : null}
               </article>
             ))}
           </div>
@@ -344,10 +398,10 @@ async function copyInvite() {
         <section className="play-panel chat-panel">
           <div><span className="eyebrow">Chat</span><h2>Discussao</h2></div>
           <div className="chat-log" ref={chatLogRef}>
-            {phase !== "DISCUSSING" ? <p className="empty-state">O chat abre apenas na fase de discussao.</p> : messages.length === 0 ? <p className="empty-state">O chat ainda esta quieto.</p> : chatGroups.map((group) => (
-              <article className="chat-user-group" key={group.playerId}>
-                <strong>{playerName(group.playerId)}</strong>
-                {group.items.map((item) => <span className="chat-message" key={item.id}>{item.content}</span>)}
+            {phase !== "DISCUSSING" ? <p className="empty-state">O chat abre apenas na fase de discussao.</p> : sortedMessages.length === 0 ? <p className="empty-state">O chat ainda esta quieto.</p> : sortedMessages.map((item) => (
+              <article className="chat-message" key={item.id}>
+                <strong>{playerName(item.playerId)}</strong>
+                <span>{item.content}</span>
               </article>
             ))}
           </div>
