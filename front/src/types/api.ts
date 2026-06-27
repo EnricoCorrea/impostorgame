@@ -21,10 +21,21 @@ export interface Room {
 
 export type GameStatus = "WAITING" | "CLUE" | "DISCUSSING" | "VOTING";
 
+export interface Clue {
+  id: number;
+  gameId: number;
+  playerId: number;
+  roundNumber: number;
+  clue: string;
+  createdAt?: string;
+}
+
 export interface PlayerState {
   id: number;
   userId: number;
+  name?: string;
   isAlive: boolean;
+  voteCount?: number;
 }
 
 export interface Game {
@@ -44,13 +55,26 @@ export interface GamePrivateState {
   finishedAt?: string | null;
   winner?: "IMPOSTOR" | "INNOCENT" | null;
   players: PlayerState[];
+  aliveCount?: number;
+  clueCount?: number;
+  voteCount?: number;
   myRole: "IMPOSTOR" | "INNOCENT" | null;
+  myPlayerId?: number | null;
+  myWord?: string | null;
 }
 
 export interface Word {
   id: number;
   word: string;
   impostorClue: string;
+}
+
+export interface Message {
+  id: number;
+  gameId: number;
+  playerId: number;
+  content: string;
+  createdAt?: string;
 }
 
 export interface Vote {
