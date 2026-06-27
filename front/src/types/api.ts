@@ -28,6 +28,8 @@ export interface Clue {
   roundNumber: number;
   clue: string;
   createdAt?: string;
+  game?: Game;
+  player?: Player;
 }
 
 export interface PlayerState {

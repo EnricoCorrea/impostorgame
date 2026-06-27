@@ -45,6 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     { href: "/rooms", label: "Salas" },
     { href: "/games", label: "Partidas" },
     { href: "/players", label: "Jogadores" },
+    { href: "/clues", label: "Dicas" },
     { href: "/words", label: "Palavras" },
     { href: "/votes", label: "Votos" },
     { href: "/live", label: "Ao vivo" },
