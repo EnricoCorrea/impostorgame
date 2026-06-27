@@ -2,10 +2,14 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ActionButton } from "@/components/ui/action-button";
+import { cluesService } from "@/services/clues.service";
 import { gamesService } from "@/services/games.service";
 import { createLiveGameSocket, type LiveSocketStatus } from "@/services/live-game.service";
+import { messagesService } from "@/services/messages.service";
+import { playersService } from "@/services/players.service";
+import { roomsService } from "@/services/rooms.service";
 import { votesService } from "@/services/votes.service";
-import type { GamePrivateState, LiveGameUpdate, VoteScore } from "@/types/api";
+import type { Clue, Game, LiveGameUpdate, Message, Player, Room, VoteScore } from "@/types/api";
 
 const statusText: Record<LiveSocketStatus, string> = {
   connecting: "Conectando",
@@ -16,33 +20,47 @@ const statusText: Record<LiveSocketStatus, string> = {
 
 export function LiveGameBoard({ onNotice }: { onNotice: (message: string) => void }) {
   const [roomId, setRoomId] = useState("");
-  const [gameId, setGameId] = useState("");
-  const [voterId, setVoterId] = useState("");
-  const [targetId, setTargetId] = useState("");
   const [socketStatus, setSocketStatus] = useState<LiveSocketStatus>("disconnected");
-  const [state, setState] = useState<GamePrivateState | null>(null);
+  const [room, setRoom] = useState<Room | null>(null);
+  const [game, setGame] = useState<Game | null>(null);
   const [update, setUpdate] = useState<LiveGameUpdate | null>(null);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [clues, setClues] = useState<Clue[]>([]);
   const [scores, setScores] = useState<VoteScore[]>([]);
   const [loading, setLoading] = useState(false);
   const socketRef = useRef<ReturnType<typeof createLiveGameSocket> | null>(null);
+  const pollRef = useRef<number | null>(null);
 
   useEffect(() => () => {
     socketRef.current?.close();
+    if (pollRef.current) window.clearInterval(pollRef.current);
   }, []);
 
-  const currentPhase = update?.status ?? state?.status ?? "WAITING";
-  const currentRound = update?.roundNumber ?? state?.round ?? 0;
+  const currentGameId = update?.gameId ?? game?.id;
+  const currentPhase = update?.status ?? game?.status ?? "WAITING";
+  const currentRound = update?.roundNumber ?? game?.roundNumber ?? 0;
+  const secretWord = players.find((player) => player.word)?.word?.word ?? "Aguardando palavra";
+  const impostorClue = players.find((player) => player.word)?.word?.impostorClue;
+  const aliveCount = players.filter((player) => player.isAlive).length;
+  const currentRoundClues = clues.filter((clue) => clue.roundNumber === currentRound);
+  const hasFinished = Boolean(update?.finishedAt ?? game?.finishedAt);
+  const visibleWinner = hasFinished ? update?.winner ?? game?.winner ?? "Em aberto" : "Em aberto";
+
   const phaseEndsAt = update?.phaseEndsAt
     ? new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(update.phaseEndsAt))
     : "Sem tempo definido";
-  const hasTableIds = Boolean(roomId && gameId);
-  const canVote = Boolean(roomId && gameId && voterId && targetId);
 
-  async function refreshScores(gameValue = gameId) {
-    if (!gameValue) return;
+  function playerName(playerId: number) {
+    const player = players.find((item) => item.id === playerId);
+    return player?.user?.name ?? `Jogador #${playerId}`;
+  }
+
+  async function refreshScores(gameValue: number, roundValue: number) {
     try {
-      const result = await votesService.list({ game_id: Number(gameValue), limit: 100 });
+      const result = await votesService.list({ game_id: gameValue, limit: 50 });
       const totals = result.data.reduce<Record<number, number>>((acc, vote) => {
+        if (roundValue && vote.roundNumber !== roundValue) return acc;
         if (vote.targetPlayerId) acc[vote.targetPlayerId] = (acc[vote.targetPlayerId] ?? 0) + 1;
         return acc;
       }, {});
@@ -52,123 +70,197 @@ export function LiveGameBoard({ onNotice }: { onNotice: (message: string) => voi
     }
   }
 
+  async function loadBoard(nextRoomId = roomId, options: { silent?: boolean } = {}) {
+    if (!nextRoomId) return;
+    if (!options.silent) setLoading(true);
+
+    try {
+      const numericRoomId = Number(nextRoomId);
+      const [nextRoom, gamesPage] = await Promise.all([
+        roomsService.get(numericRoomId),
+        gamesService.list({ room_id: numericRoomId, page: 1, limit: 10 }),
+      ]);
+      const games = gamesPage.data ?? [];
+      const activeGame =
+        games.find((item) => !item.finishedAt && item.status !== "WAITING") ??
+        games.find((item) => !item.finishedAt) ??
+        null;
+
+      setRoom(nextRoom);
+      setGame(activeGame);
+
+      if (!activeGame) {
+        setUpdate(null);
+        setPlayers([]);
+        setMessages([]);
+        setClues([]);
+        setScores([]);
+        if (!options.silent) onNotice(`Sala #${nextRoomId} sem partida criada.`);
+        return;
+      }
+
+      setUpdate((current) => ({
+        ...current,
+        gameId: activeGame.id,
+        roomId: activeGame.roomId,
+        status: activeGame.status,
+        roundNumber: activeGame.roundNumber,
+        winner: activeGame.finishedAt ? activeGame.winner ?? null : null,
+        finishedAt: activeGame.finishedAt ?? null,
+      }));
+
+      const [playerPage, messagePage, cluePage] = await Promise.all([
+        playersService.list({ game_id: activeGame.id, page: 1, limit: 50 }),
+        messagesService.list({ game_id: activeGame.id, page: 1, limit: 50 }),
+        cluesService.list({ game_id: activeGame.id, page: 1, limit: 50 }),
+      ]);
+
+      setPlayers(playerPage.data ?? []);
+      setMessages(messagePage.data ?? []);
+      setClues(cluePage.data ?? []);
+      await refreshScores(activeGame.id, activeGame.roundNumber);
+
+      if (!options.silent) onNotice(`Sala #${nextRoomId} acompanhada.`);
+    } catch (err) {
+      if (!options.silent) onNotice(err instanceof Error ? err.message : "Nao foi possivel acompanhar a sala.");
+    } finally {
+      if (!options.silent) setLoading(false);
+    }
+  }
+
   async function connect(event: FormEvent) {
     event.preventDefault();
-    if (!hasTableIds) return onNotice("Informe sala e partida para entrar na mesa.");
+    if (!roomId) return onNotice("Informe o ID da sala para acompanhar.");
+
     socketRef.current?.close();
+    if (pollRef.current) window.clearInterval(pollRef.current);
+
     const socket = createLiveGameSocket({
       onStatus: setSocketStatus,
       onMessage: (message) => {
         if (message.data) {
-          setUpdate((current) => ({ ...current, ...message.data }));
+          setUpdate((current) => {
+            const next = { ...current, ...message.data };
+            return next.finishedAt ? next : { ...next, winner: null };
+          });
           if (message.data.scores) setScores(message.data.scores);
-          void refreshScores(String(message.data.gameId ?? gameId));
+          void loadBoard(String(message.data.roomId ?? roomId), { silent: true });
         }
         if (message.message) onNotice(message.message);
       },
     });
+
     socketRef.current = socket;
     socket.send("join_room", { roomId: Number(roomId) });
-    await refreshScores(gameId);
-    onNotice(`Mesa da sala #${roomId} conectada.`);
-  }
-
-  function joinRoom() {
-    if (!roomId) return onNotice("Informe a sala antes de entrar no canal.");
-    socketRef.current?.send("join_room", { roomId: Number(roomId) });
-    onNotice(`Voce entrou na mesa da sala #${roomId}.`);
-  }
-
-  async function loadState() {
-    if (!gameId) return onNotice("Informe a partida para consultar o estado.");
-    setLoading(true);
-    try {
-      setState(await gamesService.state(Number(gameId)));
-      await refreshScores(gameId);
-      onNotice("Estado privado atualizado.");
-    } catch (err) {
-      onNotice(err instanceof Error ? err.message : "Estado privado indisponivel.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function startBySocket() {
-    if (!gameId || !roomId) return onNotice("Informe sala e partida para iniciar.");
-    socketRef.current?.send("start_game", { gameId: Number(gameId), roomId: Number(roomId) });
-    onNotice("Inicio solicitado.");
-  }
-
-  function voteBySocket() {
-    if (!canVote) return onNotice("Informe sala, partida, votante e alvo para votar.");
-    socketRef.current?.send("vote", { gameId: Number(gameId), roomId: Number(roomId), userId: Number(voterId), targetId: Number(targetId) });
-    void refreshScores(gameId);
-    onNotice("Voto enviado.");
+    await loadBoard(roomId);
+    pollRef.current = window.setInterval(() => void loadBoard(roomId, { silent: true }), 3000);
   }
 
   const cleanNumber = (value: string) => value.replace(/\D/g, "");
 
   return (
     <section className="live-board">
-      <form className="live-setup" onSubmit={connect}>
+      <form className="live-setup live-setup-observer" onSubmit={connect}>
         <div>
-          <span className="eyebrow">Mesa</span>
-          <h2>Entrar em partida existente</h2>
+          <span className="eyebrow">Sala ao vivo</span>
+          <h2>Acompanhar partida</h2>
         </div>
         <label>Sala<input value={roomId} onChange={(event) => setRoomId(cleanNumber(event.target.value))} placeholder="ID da sala" /></label>
-        <label>Partida<input value={gameId} onChange={(event) => setGameId(cleanNumber(event.target.value))} placeholder="ID da partida" /></label>
-        <ActionButton type="submit">Entrar ao vivo</ActionButton>
+        <ActionButton type="submit" loading={loading}>Conectar</ActionButton>
         <span className={`live-indicator ${socketStatus === "connected" ? "" : "offline"}`}><i /> {statusText[socketStatus]}</span>
       </form>
 
-      <div className="live-grid">
+      <div className="live-grid live-grid-observer">
         <article className="live-phase">
           <span className="eyebrow">Fase atual</span>
           <strong>{currentPhase}</strong>
           <small>Rodada {currentRound} - {phaseEndsAt}</small>
         </article>
         <article className="live-phase">
-          <span className="eyebrow">Resultado</span>
-          <strong>{update?.winner ?? state?.winner ?? "Em aberto"}</strong>
-          <small>{state?.finishedAt ? "Partida finalizada" : "Aguardando definicao"}</small>
+          <span className="eyebrow">Palavra da mesa</span>
+          <strong>{secretWord}</strong>
+          <small>{impostorClue ? `Pista do impostor: ${impostorClue}` : "Pista indisponivel"}</small>
+        </article>
+        <article className="live-phase">
+          <span className="eyebrow">Sala</span>
+          <strong>{room?.name ?? "Nao conectada"}</strong>
+          <small>{currentGameId ? `Partida #${currentGameId}` : "Sem partida ativa"}</small>
         </article>
       </div>
 
       <div className="live-sections">
         <article className="live-panel">
           <div>
-            <span className="eyebrow">Acoes da partida</span>
-            <h2>Controle da mesa</h2>
+            <span className="eyebrow">Mesa</span>
+            <h2>Jogadores</h2>
           </div>
-          <div className="live-actions">
-            <ActionButton variant="secondary" onClick={joinRoom} disabled={!roomId}>Entrar na sala</ActionButton>
-            <ActionButton variant="secondary" onClick={loadState} loading={loading} disabled={!gameId}>Atualizar estado</ActionButton>
-            <ActionButton onClick={startBySocket} disabled={!hasTableIds}>Iniciar partida</ActionButton>
+          <div className="live-player-list">
+            {players.map((player) => (
+              <div className="live-player-row" key={player.id}>
+                <span>{player.user?.name ?? `Usuario #${player.userId}`}</span>
+                <strong>{player.isAlive ? "Vivo" : "Eliminado"}</strong>
+              </div>
+            ))}
+            {!players.length && <p className="empty-inline">Nenhum jogador carregado.</p>}
           </div>
         </article>
 
         <article className="live-panel">
           <div>
-            <span className="eyebrow">Votacao</span>
-            <h2>Enviar voto</h2>
+            <span className="eyebrow">Estado do jogo</span>
+            <h2>Resumo</h2>
           </div>
-          <div className="vote-inline">
-            <label>Votante<input value={voterId} onChange={(event) => setVoterId(cleanNumber(event.target.value))} placeholder="ID do usuario" /></label>
-            <label>Alvo<input value={targetId} onChange={(event) => setTargetId(cleanNumber(event.target.value))} placeholder="ID do jogador" /></label>
-            <ActionButton variant="secondary" onClick={voteBySocket} disabled={!canVote}>Enviar voto</ActionButton>
+          <dl className="live-summary">
+            <div><dt>Jogadores vivos</dt><dd>{aliveCount}/{players.length}</dd></div>
+            <div><dt>Dicas da rodada</dt><dd>{currentRoundClues.length}</dd></div>
+            <div><dt>Vencedor</dt><dd>{visibleWinner}</dd></div>
+          </dl>
+        </article>
+      </div>
+
+      <div className="live-sections">
+        <article className="live-panel">
+          <div>
+            <span className="eyebrow">Chat</span>
+            <h2>Mensagens</h2>
+          </div>
+          <div className="live-feed">
+            {messages.map((message) => (
+              <div className="live-feed-row" key={message.id}>
+                <strong>{playerName(message.playerId)}</strong>
+                <span>{message.content}</span>
+              </div>
+            ))}
+            {!messages.length && <p className="empty-inline">Nenhuma mensagem na partida.</p>}
+          </div>
+        </article>
+
+        <article className="live-panel">
+          <div>
+            <span className="eyebrow">Dicas</span>
+            <h2>Rodada atual</h2>
+          </div>
+          <div className="live-feed">
+            {currentRoundClues.map((clue) => (
+              <div className="live-feed-row" key={clue.id}>
+                <strong>{playerName(clue.playerId)}</strong>
+                <span>{clue.clue}</span>
+              </div>
+            ))}
+            {!currentRoundClues.length && <p className="empty-inline">Nenhuma dica nesta rodada.</p>}
           </div>
         </article>
       </div>
 
       <div className="scoreboard">
         <h2>Placar da rodada</h2>
-        {(scores.length ? scores : []).map((score) => (
+        {scores.map((score) => (
           <div className="score-row" key={score.targetId}>
-            <span>Jogador #{score.targetId}</span>
+            <span>{playerName(score.targetId)}</span>
             <strong>{score.votes}</strong>
           </div>
         ))}
-        {!scores.length && <p className="empty-inline">Nenhum placar recebido em tempo real.</p>}
+        {!scores.length && <p className="empty-inline">Nenhum voto registrado na rodada.</p>}
       </div>
     </section>
   );

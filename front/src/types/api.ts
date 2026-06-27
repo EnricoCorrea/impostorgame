@@ -123,6 +123,7 @@ export interface LiveGameUpdate {
   status?: GameStatus;
   roundNumber?: number;
   phaseEndsAt?: string;
+  finishedAt?: string | null;
   winner?: "IMPOSTOR" | "INNOCENT" | null;
   scores?: VoteScore[];
   message?: string;

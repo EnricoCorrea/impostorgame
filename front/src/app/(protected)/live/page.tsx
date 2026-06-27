@@ -22,7 +22,7 @@ export default function LivePage() {
         <div>
           <span className="eyebrow">Tempo real</span>
           <h1>Mesa ao vivo</h1>
-          <p>Acompanhe uma sala e partida ja criadas, com estado, placar e acoes em tempo real.</p>
+          <p>Conecte uma sala pelo ID e acompanhe mesa, chat, palavra, dicas e estado atual da partida.</p>
         </div>
         <span className={`live-indicator ${healthError ? "offline" : ""}`}><i /> {healthError || health?.status || "Verificando API"}</span>
       </header>

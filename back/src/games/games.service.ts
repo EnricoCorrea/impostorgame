@@ -15,6 +15,7 @@ import { paginate } from '../common/enums/utils/paginate';
 import { PaginationDto } from 'src/common/enums/dto/pagination.dto';
 import {
   clearPhaseExpiration,
+  getPhaseExpiration,
   hasPhaseExpired,
   setPhaseExpiration,
 } from '../common/enums/utils/phase-timeout-store';
@@ -25,6 +26,8 @@ import { Clue } from 'src/clues/entities/clue.entity';
 
 @Injectable()
 export class GamesService {
+  private gameUpdatedHandlers: Array<(update: any) => void> = [];
+
   constructor(
     @InjectModel(Game)
     private gameModel: typeof Game,
@@ -47,6 +50,52 @@ export class GamesService {
     @InjectModel(Clue)
     private clueModel: typeof Clue,
   ) {}
+
+  onGameUpdated(handler: (update: any) => void) {
+    this.gameUpdatedHandlers.push(handler);
+  }
+
+  async getLiveUpdate(gameId: number) {
+    const game = await this.gameModel.findByPk(gameId);
+
+    if (!game) throw new NotFoundException('Game not found');
+
+    const votes = await this.voteModel.findAll({
+      where: { gameId, roundNumber: game.roundNumber },
+    });
+
+    const scoresByTarget = votes.reduce<Record<number, number>>((acc, vote) => {
+      if (vote.targetPlayerId == null) return acc;
+      acc[vote.targetPlayerId] = (acc[vote.targetPlayerId] || 0) + 1;
+      return acc;
+    }, {});
+
+    const phaseExpiration = getPhaseExpiration(game.id);
+
+    return {
+      gameId: game.id,
+      roomId: game.roomId,
+      status: game.status,
+      roundNumber: game.roundNumber,
+      winner: game.winner ?? null,
+      finishedAt: game.finishedAt ?? null,
+      phaseEndsAt: phaseExpiration
+        ? new Date(phaseExpiration).toISOString()
+        : undefined,
+      scores: Object.entries(scoresByTarget).map(([targetId, votes]) => ({
+        targetId: Number(targetId),
+        votes,
+      })),
+    };
+  }
+
+  private async notifyGameUpdated(gameId: number) {
+    if (!this.gameUpdatedHandlers.length) return;
+    const update = await this.getLiveUpdate(gameId);
+    for (const handler of this.gameUpdatedHandlers) {
+      handler(update);
+    }
+  }
 
   async findAll(pagination: PaginationDto, filters: GameFilterDto) {
     const where = {
@@ -188,6 +237,7 @@ export class GamesService {
       { where: { id: game.roomId } },
     );
     clearPhaseExpiration(game.id);
+    await this.notifyGameUpdated(game.id);
 
     return game;
   }
@@ -214,6 +264,7 @@ export class GamesService {
     this.nextPhase(game);
     await game.save();
     this.schedulePhaseTimeout(game);
+    await this.notifyGameUpdated(game.id);
     return game;
   }
 
@@ -309,7 +360,9 @@ export class GamesService {
       roundNumber: game.roundNumber,
     });
 
-    return this.checkAllVoted(gameId);
+    const result = await this.checkAllVoted(gameId);
+    await this.notifyGameUpdated(gameId);
+    return result;
   }
 
   async checkAllVoted(gameId: number) {
@@ -354,11 +407,13 @@ export class GamesService {
         this.nextPhase(currentGame);
         await currentGame.save();
         this.schedulePhaseTimeout(currentGame);
+        await this.notifyGameUpdated(currentGame.id);
         return;
       }
 
       if (currentGame.status === 'VOTING') {
         await this.resolveVoting(currentGame.id);
+        await this.notifyGameUpdated(currentGame.id);
       }
     }, phaseDuration);
 

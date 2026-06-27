@@ -9,7 +9,7 @@ function getSocketUrl() {
 }
 
 export type LiveSocketStatus = "connecting" | "connected" | "disconnected" | "error";
-export type LiveSocketEvent = "game_updated" | "message";
+export type LiveSocketEvent = "game_updated" | "live_error" | "message";
 
 export interface LiveSocketMessage {
   event?: LiveSocketEvent | string;
@@ -34,6 +34,7 @@ export function createLiveGameSocket({
     onMessage({ event: "message", message: error.message });
   });
   socket.on("game_updated", (data: LiveGameUpdate) => onMessage({ event: "game_updated", data }));
+  socket.on("live_error", (data: { message?: string }) => onMessage({ event: "live_error", message: data.message ?? "Acao nao concluida." }));
 
   return {
     send: (event: string, data: Record<string, unknown>) => socket.emit(event, data),

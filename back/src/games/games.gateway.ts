@@ -15,7 +15,17 @@ export class GamesGateway {
   @WebSocketServer()
   server: Server;
 
-  constructor(private gamesService: GamesService) {}
+  constructor(private gamesService: GamesService) {
+    this.gamesService.onGameUpdated((update) => {
+      if (!update?.roomId) return;
+      this.server.to(`room-${update.roomId}`).emit('game_updated', update);
+    });
+  }
+
+  private emitError(client: Socket | undefined, error: unknown) {
+    const message = error instanceof Error ? error.message : 'Acao nao concluida';
+    client?.emit('live_error', { message });
+  }
 
   @SubscribeMessage('join_room')
   handleJoin(
@@ -27,16 +37,36 @@ export class GamesGateway {
   }
 
   @SubscribeMessage('start_game')
-  async handleStart(@MessageBody() data: { gameId: number; roomId: number }) {
+  async handleStart(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { gameId: number; roomId: number },
+  ) {
     console.log('START GAME:', data);
 
-    const game = await this.gamesService.startGame(data.gameId);
+    try {
+      await this.gamesService.startGame(data.gameId);
+    } catch (error) {
+      this.emitError(client, error);
+    }
+  }
 
-    this.server.to(`room-${data.roomId}`).emit('game_updated', game);
+  @SubscribeMessage('next_phase')
+  async handleNextPhase(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { gameId: number; roomId: number },
+  ) {
+    console.log('NEXT PHASE:', data);
+
+    try {
+      await this.gamesService.advancePhase(data.gameId);
+    } catch (error) {
+      this.emitError(client, error);
+    }
   }
 
   @SubscribeMessage('vote')
   async handleVote(
+    @ConnectedSocket() client: Socket,
     @MessageBody()
     data: {
       gameId: number;
@@ -47,8 +77,10 @@ export class GamesGateway {
   ) {
     console.log('VOTE:', data);
 
-    await this.gamesService.vote(data.gameId, data.userId, data.targetId);
-
-    this.server.to(`room-${data.roomId}`).emit('game_updated', { ok: true });
+    try {
+      await this.gamesService.vote(data.gameId, data.userId, data.targetId);
+    } catch (error) {
+      this.emitError(client, error);
+    }
   }
 }
