@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ActionButton } from "@/components/ui/action-button";
+import { BrandMark } from "@/components/layout/brand-mark";
 import { authService } from "@/services/auth.service";
 import { roomsService } from "@/services/rooms.service";
 import type { Room, User } from "@/types/api";
@@ -72,7 +73,7 @@ export default function PlayHomePage() {
   return (
     <main className="player-page">
       <header className="player-topbar">
-        <Link className="brand" href="/play"><span className="brand-mark">IG</span><span>Impostor<strong>Game</strong></span></Link>
+        <Link className="brand" href="/play"><BrandMark /><span>Impostor<strong>Game</strong></span></Link>
         <div className="player-account">
           <span>{me?.name ?? "Jogador"}</span>
           <button className="text-button" onClick={() => { authService.logout(); router.replace("/login"); }}>Sair</button>

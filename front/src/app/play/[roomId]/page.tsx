@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ActionButton } from "@/components/ui/action-button";
+import { BrandMark } from "@/components/layout/brand-mark";
 import { authService } from "@/services/auth.service";
 import { cluesService } from "@/services/clues.service";
 import { gamesService } from "@/services/games.service";
@@ -203,7 +204,7 @@ export default function PlayRoomPage() {
   return (
     <main className="player-page game-page">
       <header className="player-topbar">
-        <Link className="brand" href="/play"><span className="brand-mark">IG</span><span>Impostor<strong>Game</strong></span></Link>
+        <Link className="brand" href="/play"><BrandMark /><span>Impostor<strong>Game</strong></span></Link>
         <div className="player-account"><span>{me?.name ?? "Jogador"}</span><button className="text-button" onClick={leaveRoom} disabled={busy}>Sair da sala</button><Link className="text-button" href="/play">Salas</Link></div>
       </header>
 
