@@ -9,6 +9,16 @@ import { authService } from "@/services/auth.service";
 import { roomsService } from "@/services/rooms.service";
 import type { Room, User } from "@/types/api";
 
+function roomStatusLabel(status: Room["status"]) {
+  if (status === "PLAYING") return "Iniciada";
+  if (status === "WAITING") return "Aberta";
+  return "Fechada";
+}
+
+function canOpenRoom(room: Room) {
+  return room.status === "WAITING";
+}
+
 export default function PlayHomePage() {
   const router = useRouter();
   const [me, setMe] = useState<User | null>(null);
@@ -45,6 +55,11 @@ export default function PlayHomePage() {
   }, [page, router, searchName]);
 
   useEffect(() => {
+    const pendingNotice = window.sessionStorage.getItem("playNotice");
+    if (pendingNotice) {
+      setNotice(pendingNotice);
+      window.sessionStorage.removeItem("playNotice");
+    }
     load();
   }, [load]);
 
@@ -111,7 +126,7 @@ export default function PlayHomePage() {
 
         <section className="play-panel room-list-panel">
           <div className="panel-title-row">
-            <div><span className="eyebrow">Salas abertas</span><h2>Entrar rapido</h2></div>
+            <div><span className="eyebrow">Salas</span><h2>Entrar rapido</h2></div>
             <button className="text-button" onClick={load} disabled={loading}>Atualizar</button>
           </div>
 
@@ -122,8 +137,14 @@ export default function PlayHomePage() {
           <div className="room-list">
             {loading ? <p className="empty-state">Carregando salas...</p> : rooms.length === 0 ? <p className="empty-state">Nenhuma sala disponivel.</p> : rooms.map((room) => (
               <article className="room-row" key={room.id}>
-                <div><strong>{room.name}</strong><span>#{room.id} - {room.status} - ate {room.maxUsers}</span></div>
-                <Link className="button button-secondary" href={`/play/${room.id}`}>Abrir</Link>
+                <div>
+                  <strong>{room.name}</strong>
+                  <span className="room-row-meta">
+                    <span>#{room.id} - ate {room.maxUsers}</span>
+                    <span className={`room-status room-status-${room.status.toLowerCase()}`}>{roomStatusLabel(room.status)}</span>
+                  </span>
+                </div>
+                {canOpenRoom(room) ? <Link className="button button-secondary" href={`/play/${room.id}`}>Abrir</Link> : <button className="button button-secondary" type="button" disabled>Bloqueada</button>}
               </article>
             ))}
           </div>

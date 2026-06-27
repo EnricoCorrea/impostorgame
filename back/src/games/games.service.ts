@@ -529,6 +529,10 @@ export class GamesService {
     game.finishedAt = new Date();
 
     await game.save();
+    await this.roomModel.update(
+      { status: 'WAITING' },
+      { where: { id: game.roomId } },
+    );
 
     return game;
   }

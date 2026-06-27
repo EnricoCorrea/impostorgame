@@ -61,6 +61,16 @@ export class RoomsService {
       throw new NotFoundException('Room not found');
     }
 
+    const existingUser = await this.roomUserModel.findOne({
+      where: { roomId, userId },
+    });
+
+    if (existingUser) {
+      return {
+        message: 'Already in room',
+      };
+    }
+
     // RN008 - jogo em andamento
     const activeGame = await this.gameModel.findOne({
       where: {
@@ -72,7 +82,7 @@ export class RoomsService {
 
     if (activeGame && activeGame.status !== 'WAITING') {
       throw new BadRequestException(
-        'Cannot join room while a game is in progress',
+        'A partida ja comecou. Aguarde terminar para entrar na sala.',
       );
     }
 
@@ -120,10 +130,14 @@ export class RoomsService {
       }),
     };
 
-    return paginate(this.roomModel, pagination, {
+    const result = await paginate(this.roomModel, pagination, {
       where,
       distinct: true,
     });
+
+    await this.applyEffectiveRoomStatus(result.data);
+
+    return result;
   }
 
   async getRoomUsers(roomId: number) {
@@ -144,9 +158,39 @@ export class RoomsService {
     });
 
     if (!room) throw new NotFoundException('Room not found');
+    await this.applyEffectiveRoomStatus([room]);
     return room;
   }
 
+  private async applyEffectiveRoomStatus(rooms: Room[]) {
+    const openRooms = rooms.filter((room) => room.status !== 'CLOSED');
+    const roomIds = openRooms.map((room) => room.id);
+
+    if (roomIds.length === 0) return;
+
+    const activeGames = await this.gameModel.findAll({
+      where: {
+        roomId: { [Op.in]: roomIds },
+        finishedAt: null,
+      },
+      order: [['startedAt', 'DESC']],
+    });
+
+    const gamesByRoom = new Map<number, Game>();
+    for (const game of activeGames) {
+      if (!gamesByRoom.has(game.roomId)) {
+        gamesByRoom.set(game.roomId, game);
+      }
+    }
+
+    for (const room of openRooms) {
+      const activeGame = gamesByRoom.get(room.id);
+      room.setDataValue(
+        'status',
+        activeGame && activeGame.status !== 'WAITING' ? 'PLAYING' : 'WAITING',
+      );
+    }
+  }
   async update(id: number, data: any) {
     const room = await this.roomModel.findByPk(id);
     if (!room) throw new NotFoundException('Room not found');

@@ -80,7 +80,15 @@ export default function PlayRoomPage() {
     try {
       const profile = await authService.me();
       setMe(profile);
-      await roomsService.join(roomId).catch(() => undefined);
+      try {
+        await roomsService.join(roomId);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Nao foi possivel entrar nesta sala.";
+        setNotice(message);
+        window.sessionStorage.setItem("playNotice", message);
+        router.replace("/play");
+        return;
+      }
       const [freshRoom, gamesPage] = await Promise.all([
         roomsService.get(roomId),
         gamesService.list({ room_id: roomId, page: 1, limit: 10 }),

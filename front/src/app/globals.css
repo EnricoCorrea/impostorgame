@@ -109,3 +109,5 @@ label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:800;
 @media (min-width:901px) and (max-height:720px){
   .play-home-page .player-grid{max-height:calc(100vh - 156px)}.play-home-page .room-list-panel{height:calc(100vh - 156px);min-height:280px;max-height:430px}.play-home-page .create-room-panel{gap:9px}.play-home-page .create-room-panel input,.play-home-page .create-room-panel select{height:36px}
 }
+
+.room-row-meta{display:flex!important;align-items:center;gap:7px;flex-wrap:wrap;margin-top:5px}.room-row-meta span{margin:0}.room-status{display:inline-flex!important;align-items:center;width:max-content;border-radius:999px;padding:4px 8px;font-size:10px!important;font-weight:900;text-transform:uppercase;letter-spacing:.04em;line-height:1}.room-status-waiting{background:#dff0d8;color:#246b3a}.room-status-playing{background:#fff0c6;color:#88650a}.room-status-closed{background:#eeeeee;color:#666}.play-home-page .room-row .button:disabled{transform:none}.play-home-page .room-row>div{min-width:0}.play-home-page .room-row strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
