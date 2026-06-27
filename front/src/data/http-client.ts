@@ -20,7 +20,7 @@ async function readErrorMessage(response: Response) {
 
   if (response.status === 401) {
     tokenStore.clear();
-    return "Sessao expirada. Entre novamente.";
+    return "Email ou senha errada. Tente novamente.";
   }
 
   if (!text) return "Nao foi possivel concluir a operacao";
