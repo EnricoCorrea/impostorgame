@@ -21,16 +21,16 @@ export default function DashboardPage() {
 
       <section className="stats">
         <article>
-          <strong>15</strong>
-          <span>Controles ativos</span>
+          <strong>Lobby</strong>
+          <span>Salas e acessos prontos para organizar jogadores</span>
         </article>
         <article>
-          <strong>3</strong>
-          <span>Areas de gestao</span>
+          <strong>Partidas</strong>
+          <span>Rodadas, palavras e fases acompanhadas pelo painel</span>
         </article>
         <article>
-          <strong>47</strong>
-          <span>Operacoes registradas</span>
+          <strong>Jogo</strong>
+          <span>Dicas, mensagens, votos e resultado integrados</span>
         </article>
       </section>
 
@@ -40,9 +40,7 @@ export default function DashboardPage() {
           <h2>Jogadores, acessos e salas</h2>
           <ul className="check-list">
             {roomChecks.map((check) => (
-              <li key={check}>
-                OK <span>{check}</span>
-              </li>
+              <li key={check}>{check}</li>
             ))}
           </ul>
         </article>

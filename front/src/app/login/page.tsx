@@ -51,7 +51,6 @@ export default function LoginPage() {
       <section className="login-panel">
         <form className="login-form" onSubmit={submit} noValidate>
           <div>
-            <span className="eyebrow">Bem-vindo de volta</span>
             <h2>Entre na sua conta</h2>
             <p>Use suas credenciais para acessar o painel.</p>
           </div>

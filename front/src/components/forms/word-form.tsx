@@ -37,7 +37,7 @@ export function WordForm({ word, onSaved }: { word?: Word; onSaved: () => void }
     <form className={word ? "stack" : "form-card"} onSubmit={submit} noValidate>
       {!word && (
         <div>
-          <span className="eyebrow">Componente medio</span>
+          <span className="eyebrow">Banco de palavras</span>
           <h2>Cadastrar palavra</h2>
           <p>Palavras alimentam o sorteio usado ao criar partidas.</p>
         </div>
